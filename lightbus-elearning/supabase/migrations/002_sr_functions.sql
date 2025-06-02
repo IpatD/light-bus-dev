@@ -282,14 +282,18 @@ CREATE OR REPLACE FUNCTION get_user_stats(
 ) AS $$
 DECLARE
     v_stats RECORD;
-    v_weekly BIGINT[] := ARRAY[0,0,0,0,0,0,0];
-    v_monthly BIGINT[] := ARRAY_FILL(0, ARRAY[30]);
+    v_weekly BIGINT[];
+    v_monthly BIGINT[];
     i INT;
     review_date DATE;
     day_offset INT;
 BEGIN
+    -- Initialize arrays
+    v_weekly := ARRAY[0,0,0,0,0,0,0];
+    v_monthly := ARRAY_FILL(0, ARRAY[30]);
+
     -- Get basic statistics
-    SELECT 
+    SELECT
         COALESCE(COUNT(CASE WHEN r.completed_at IS NOT NULL THEN 1 END), 0) as tot_reviews,
         COALESCE(AVG(CASE WHEN r.completed_at IS NOT NULL THEN r.quality_rating END), 0.0) as avg_quality,
         COALESCE(MAX(p.study_streak), 0) as max_streak,
@@ -306,28 +310,40 @@ BEGIN
     WHERE lp.student_id = p_user_id;
 
     -- Build weekly progress (last 7 days)
-    FOR i IN 0..6 LOOP
-        review_date := CURRENT_DATE - i;
-        SELECT COUNT(*) INTO v_weekly[7-i]
-        FROM public.sr_reviews r
-        JOIN public.sr_cards c ON r.card_id = c.id
-        JOIN public.lesson_participants lp ON c.lesson_id = lp.lesson_id
-        WHERE r.student_id = p_user_id
-          AND lp.student_id = p_user_id
-          AND r.completed_at::DATE = review_date;
-    END LOOP;
+    SELECT ARRAY_AGG(daily_count ORDER BY day_index) INTO v_weekly
+    FROM (
+        SELECT
+            i AS day_index,
+            COALESCE(COUNT(r.id), 0) as daily_count
+        FROM generate_series(0, 6) AS i
+        LEFT JOIN public.sr_reviews r ON r.student_id = p_user_id
+            AND r.completed_at::DATE = CURRENT_DATE - i
+            AND EXISTS (
+                SELECT 1 FROM public.sr_cards c
+                JOIN public.lesson_participants lp ON c.lesson_id = lp.lesson_id
+                WHERE c.id = r.card_id AND lp.student_id = p_user_id
+            )
+        GROUP BY i
+        ORDER BY i
+    ) weekly_data;
 
     -- Build monthly progress (last 30 days)
-    FOR i IN 0..29 LOOP
-        review_date := CURRENT_DATE - i;
-        SELECT COUNT(*) INTO v_monthly[30-i]
-        FROM public.sr_reviews r
-        JOIN public.sr_cards c ON r.card_id = c.id
-        JOIN public.lesson_participants lp ON c.lesson_id = lp.lesson_id
-        WHERE r.student_id = p_user_id
-          AND lp.student_id = p_user_id
-          AND r.completed_at::DATE = review_date;
-    END LOOP;
+    SELECT ARRAY_AGG(daily_count ORDER BY day_index) INTO v_monthly
+    FROM (
+        SELECT
+            i AS day_index,
+            COALESCE(COUNT(r.id), 0) as daily_count
+        FROM generate_series(0, 29) AS i
+        LEFT JOIN public.sr_reviews r ON r.student_id = p_user_id
+            AND r.completed_at::DATE = CURRENT_DATE - i
+            AND EXISTS (
+                SELECT 1 FROM public.sr_cards c
+                JOIN public.lesson_participants lp ON c.lesson_id = lp.lesson_id
+                WHERE c.id = r.card_id AND lp.student_id = p_user_id
+            )
+        GROUP BY i
+        ORDER BY i
+    ) monthly_data;
 
     -- Return comprehensive stats
     RETURN QUERY SELECT

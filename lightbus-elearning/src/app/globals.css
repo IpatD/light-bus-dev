@@ -74,7 +74,7 @@ button {
 }
 
 .btn-secondary {
-  @apply bg-achievement-500 text-deep-charcoal font-semibold py-3 px-6 transition-all duration-200 hover:bg-achievement-600 focus:outline-none focus:ring-2 focus:ring-achievement-500 focus:ring-offset-2;
+  @apply bg-achievement-500 text-neutral-charcoal font-semibold py-3 px-6 transition-all duration-200 hover:bg-achievement-600 focus:outline-none focus:ring-2 focus:ring-achievement-500 focus:ring-offset-2;
   border-radius: 0px;
 }
 
@@ -89,12 +89,12 @@ button {
 }
 
 .input-field {
-  @apply w-full px-4 py-3 border-2 border-study-gray bg-white text-deep-charcoal placeholder-study-gray focus:outline-none focus:border-learning-500 transition-colors duration-200;
+  @apply w-full px-4 py-3 border-2 border-neutral-gray bg-white text-neutral-charcoal placeholder-neutral-gray focus:outline-none focus:border-learning-500 transition-colors duration-200;
   border-radius: 0px;
 }
 
 .card {
-  @apply bg-white border-2 border-study-gray p-6 shadow-lg transition-shadow duration-200 hover:shadow-xl;
+  @apply bg-white border-2 border-neutral-gray p-6 shadow-lg transition-shadow duration-200 hover:shadow-xl;
   border-radius: 0px;
 }
 
@@ -104,7 +104,7 @@ button {
 }
 
 .flashcard {
-  @apply bg-white border-4 border-deep-charcoal min-h-[300px] p-8 flex flex-col justify-center items-center text-center transition-all duration-300 hover:shadow-2xl cursor-pointer;
+  @apply bg-white border-4 border-neutral-charcoal min-h-[300px] p-8 flex flex-col justify-center items-center text-center transition-all duration-300 hover:shadow-2xl cursor-pointer;
   border-radius: 0px;
 }
 
@@ -114,31 +114,31 @@ button {
 
 /* Typography styles */
 .heading-1 {
-  @apply text-4xl md:text-5xl font-bold text-deep-charcoal leading-tight;
+  @apply text-4xl md:text-5xl font-bold text-neutral-charcoal leading-tight;
 }
 
 .heading-2 {
-  @apply text-3xl md:text-4xl font-bold text-deep-charcoal leading-tight;
+  @apply text-3xl md:text-4xl font-bold text-neutral-charcoal leading-tight;
 }
 
 .heading-3 {
-  @apply text-2xl md:text-3xl font-semibold text-deep-charcoal leading-tight;
+  @apply text-2xl md:text-3xl font-semibold text-neutral-charcoal leading-tight;
 }
 
 .heading-4 {
-  @apply text-xl md:text-2xl font-semibold text-deep-charcoal leading-tight;
+  @apply text-xl md:text-2xl font-semibold text-neutral-charcoal leading-tight;
 }
 
 .body-large {
-  @apply text-lg text-deep-charcoal leading-relaxed;
+  @apply text-lg text-neutral-charcoal leading-relaxed;
 }
 
 .body-medium {
-  @apply text-base text-deep-charcoal leading-relaxed;
+  @apply text-base text-neutral-charcoal leading-relaxed;
 }
 
 .body-small {
-  @apply text-sm text-study-gray leading-relaxed;
+  @apply text-sm text-neutral-gray leading-relaxed;
 }
 
 /* Layout components */
@@ -156,7 +156,7 @@ button {
 
 /* Navigation styles */
 .nav-header {
-  @apply bg-deep-charcoal border-b-4 border-learning-500;
+  @apply bg-neutral-charcoal border-b-4 border-learning-500;
 }
 
 .nav-link {
@@ -240,6 +240,6 @@ button {
 
 /* Loading spinner */
 .spinner {
-  @apply inline-block w-6 h-6 border-2 border-study-gray border-t-learning-500 animate-spin;
+  @apply inline-block w-6 h-6 border-2 border-neutral-gray border-t-learning-500 animate-spin;
   border-radius: 50%;
 }

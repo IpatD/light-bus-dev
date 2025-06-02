@@ -5,8 +5,8 @@
 -- Creates a new lesson with validation
 CREATE OR REPLACE FUNCTION create_lesson(
     p_name TEXT,
-    p_description TEXT DEFAULT NULL,
     p_scheduled_at TIMESTAMPTZ,
+    p_description TEXT DEFAULT NULL,
     p_duration_minutes INTEGER DEFAULT NULL
 )
 RETURNS JSON
