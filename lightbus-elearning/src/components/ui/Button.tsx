@@ -20,11 +20,12 @@ const Button: React.FC<ButtonProps> = ({
   `
 
   const variantStyles = {
-    primary: 'bg-learning-500 hover:bg-learning-600 focus:ring-learning-500',
-    secondary: 'bg-achievement-500 hover:bg-achievement-600 focus:ring-achievement-500',
-    accent: 'bg-focus-500 hover:bg-focus-600 focus:ring-focus-500',
-    ghost: 'bg-transparent border-2 border-learning-500 hover:bg-learning-500 focus:ring-learning-500',
-    danger: 'bg-red-500 hover:bg-red-600 focus:ring-red-500',
+    primary: 'bg-[#ff6b35] hover:bg-[#e55a2b] focus:ring-[#ff6b35] text-white',
+    secondary: 'bg-white border-2 border-black hover:bg-[#ff6b35] hover:text-white focus:ring-[#ff6b35] text-gray-800',
+    accent: 'bg-[#ff6b35] hover:bg-[#e55a2b] focus:ring-[#ff6b35] text-white',
+    ghost: 'bg-transparent border-2 border-black hover:bg-[#ff6b35] hover:text-white focus:ring-[#ff6b35] text-gray-800',
+    danger: 'bg-red-500 hover:bg-red-600 focus:ring-red-500 text-white',
+    'white-orange': 'bg-white border-2 border-[#ff6b35] hover:bg-[#ff6b35] hover:text-white focus:ring-[#ff6b35] text-[#ff6b35]',
   }
 
   const sizeStyles = {
@@ -46,7 +47,7 @@ const Button: React.FC<ButtonProps> = ({
       className={combinedClassName}
       onClick={onClick}
       disabled={disabled || loading}
-      style={{ borderRadius: '0px', color: '#ff6b35' }} // Pronounced edges & orange text
+      style={{ borderRadius: '0px' }} // Pronounced edges
     >
       {loading && (
         <svg

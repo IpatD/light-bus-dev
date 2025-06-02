@@ -205,7 +205,7 @@ export interface FlashcardProps {
 }
 
 export interface ButtonProps {
-  variant?: 'primary' | 'secondary' | 'accent' | 'ghost' | 'danger'
+  variant?: 'primary' | 'secondary' | 'accent' | 'ghost' | 'danger' | 'white-orange'
   size?: 'sm' | 'md' | 'lg'
   disabled?: boolean
   loading?: boolean

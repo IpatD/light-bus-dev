@@ -106,9 +106,9 @@ export default function TeacherQuickActions({ className = '' }: TeacherQuickActi
             
             <Link href={action.href}>
               <Button
-                variant="primary"
+                variant={action.buttonText === '+ Create Card' ? 'white-orange' : 'primary'}
                 size="sm"
-                className="bg-white border-2 border-black text-gray-800 hover:bg-orange-100"
+                className={action.buttonText === '+ Create Card' ? '' : "bg-white border-2 border-black text-gray-800 hover:bg-orange-100"}
               >
                 {action.buttonText}
               </Button>
