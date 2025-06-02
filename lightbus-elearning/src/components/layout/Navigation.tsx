@@ -1,49 +1,22 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
-import { User } from '@/types'
-import { getCurrentUser, signOut } from '@/lib/supabase'
+import { useAuth } from '@/hooks/useAuth'
 import Button from '../ui/Button'
 
 const Navigation: React.FC = () => {
-  const [user, setUser] = useState<User | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const currentUser = await getCurrentUser()
-        if (currentUser) {
-          // In a real app, you'd fetch the user profile from your profiles table
-          // For now, we'll use the auth user data
-          setUser({
-            id: currentUser.id,
-            email: currentUser.email || '',
-            name: currentUser.user_metadata?.name || currentUser.email?.split('@')[0] || 'User',
-            role: currentUser.user_metadata?.role || 'student',
-            created_at: currentUser.created_at,
-            updated_at: currentUser.updated_at || currentUser.created_at,
-          })
-        }
-      } catch (error) {
-        console.error('Error fetching user:', error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    fetchUser()
-  }, [])
+  
+  // Use the authentication hook that properly listens to auth state changes
+  const { user, loading: isLoading, signOut: authSignOut } = useAuth()
 
   const handleSignOut = async () => {
     try {
-      await signOut()
-      setUser(null)
+      await authSignOut()
       router.push('/')
     } catch (error) {
       console.error('Error signing out:', error)
