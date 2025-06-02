@@ -209,21 +209,86 @@ button {
   border-radius: 0px;
 }
 
-/* Custom scrollbar */
+/* Enhanced Custom Scrollbar - Semi-transparent with rounded edges */
+/* Webkit browsers (Chrome, Safari, Edge) */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 12px;
+  height: 12px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--clean-white);
+  background: rgba(113, 128, 150, 0.1); /* Semi-transparent study-gray */
+  border-radius: 6px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--learning-orange);
+  background: rgba(255, 107, 53, 0.6); /* Semi-transparent learning-orange */
+  border-radius: 6px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+  transition: all 0.2s ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--focus-amber);
+  background: rgba(255, 167, 38, 0.8); /* Semi-transparent focus-amber on hover */
+  transform: scale(1.05);
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: rgba(255, 107, 53, 0.9); /* More opaque when active */
+}
+
+::-webkit-scrollbar-corner {
+  background: rgba(113, 128, 150, 0.1);
+  border-radius: 6px;
+}
+
+/* Firefox scrollbar styling */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 107, 53, 0.6) rgba(113, 128, 150, 0.1);
+}
+
+/* Enhanced scrollbar for better visual integration */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 107, 53, 0.6) rgba(113, 128, 150, 0.1);
+}
+
+/* Responsive scrollbar sizing */
+@media (max-width: 768px) {
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    border-radius: 4px;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    border-radius: 4px;
+    border: 1px solid transparent;
+  }
+}
+
+/* Dark mode scrollbar adjustments */
+@media (prefers-color-scheme: dark) {
+  ::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255, 107, 53, 0.7);
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 167, 38, 0.9);
+  }
+  
+  html, * {
+    scrollbar-color: rgba(255, 107, 53, 0.7) rgba(255, 255, 255, 0.1);
+  }
 }
 
 /* Print styles */
