@@ -221,7 +221,6 @@ export default function TeacherLessonList({ className = '' }: TeacherLessonListP
                     size="sm"
                     onClick={() => handleDeleteClick(lesson)}
                     className="text-red-600 hover:bg-red-50"
-                    title="Delete lesson"
                   >
                     🗑️
                   </Button>

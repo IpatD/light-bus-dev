@@ -160,6 +160,32 @@ export default function TeacherLessonDetailPage() {
     })
   }
 
+  const handleDeleteLesson = async () => {
+    if (!lessonData?.lesson) return
+
+    setIsDeleting(true)
+    try {
+      const { data, error } = await supabase.rpc('delete_lesson', {
+        p_lesson_id: lessonId
+      })
+
+      if (error) throw error
+
+      if (!data?.success) {
+        throw new Error(data?.error || 'Failed to delete lesson')
+      }
+
+      // Redirect to teacher dashboard after successful deletion
+      router.push('/dashboard/teacher')
+    } catch (error: any) {
+      console.error('Error deleting lesson:', error)
+      alert(error.message || 'Failed to delete lesson')
+    } finally {
+      setIsDeleting(false)
+      setShowDeleteModal(false)
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-neutral-white">
@@ -236,6 +262,13 @@ export default function TeacherLessonDetailPage() {
                   + Add Cards
                 </Button>
               </Link>
+              <Button
+                variant="ghost"
+                onClick={() => setShowDeleteModal(true)}
+                className="text-red-600 hover:bg-red-50"
+              >
+                🗑️ Delete
+              </Button>
             </div>
           </div>
 
@@ -524,6 +557,23 @@ export default function TeacherLessonDetailPage() {
             </div>
           </div>
         </Modal>
+
+        {/* Delete Confirmation Modal */}
+        <ConfirmationModal
+          isOpen={showDeleteModal}
+          onClose={() => setShowDeleteModal(false)}
+          onConfirm={handleDeleteLesson}
+          title="Delete Lesson"
+          message={
+            lessonData?.lesson
+              ? `Are you sure you want to delete "${lessonData.lesson.name}"? This action cannot be undone and will remove all associated cards, student progress, and lesson data.${participants.length > 0 ? ` This lesson has ${participants.length} enrolled student${participants.length > 1 ? 's' : ''}.` : ''}`
+              : 'Are you sure you want to delete this lesson?'
+          }
+          confirmText="Delete Lesson"
+          cancelText="Cancel"
+          isLoading={isDeleting}
+          variant="danger"
+        />
       </div>
     </div>
   )
