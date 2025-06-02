@@ -262,13 +262,6 @@ export default function TeacherLessonDetailPage() {
                   + Add Cards
                 </Button>
               </Link>
-              <Button
-                variant="ghost"
-                onClick={() => setShowDeleteModal(true)}
-                className="text-red-600 hover:bg-red-50"
-              >
-                🗑️ Delete
-              </Button>
             </div>
           </div>
 
@@ -520,6 +513,35 @@ export default function TeacherLessonDetailPage() {
               </div>
             </Card>
           </div>
+        </div>
+
+        {/* Danger Zone - Delete Section */}
+        <div className="mt-12 pt-8 border-t border-neutral-gray border-opacity-20">
+          <Card variant="default" padding="lg" className="border-red-200 bg-red-50">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="heading-4 text-red-800 mb-2">⚠️ Danger Zone</h3>
+                <p className="text-sm text-red-600 mb-1">
+                  Delete this lesson permanently
+                </p>
+                <p className="text-xs text-red-500">
+                  This action cannot be undone. All associated cards, student progress, and lesson data will be removed.
+                  {participants.length > 0 && (
+                    <span className="block mt-1">
+                      <strong>Warning:</strong> This lesson has {participants.length} enrolled student{participants.length > 1 ? 's' : ''}.
+                    </span>
+                  )}
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                onClick={() => setShowDeleteModal(true)}
+                className="text-red-700 border-red-300 hover:bg-red-100 hover:border-red-400 font-medium"
+              >
+                🗑️ Delete Lesson
+              </Button>
+            </div>
+          </Card>
         </div>
 
         {/* Add Student Modal */}
