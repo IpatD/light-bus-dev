@@ -20,11 +20,11 @@ const Button: React.FC<ButtonProps> = ({
   `
 
   const variantStyles = {
-    primary: 'bg-learning-500 text-white hover:bg-learning-600 focus:ring-learning-500',
-    secondary: 'bg-achievement-500 text-neutral-charcoal hover:bg-achievement-600 focus:ring-achievement-500',
-    accent: 'bg-focus-500 text-white hover:bg-focus-600 focus:ring-focus-500',
-    ghost: 'bg-transparent text-learning-500 border-2 border-learning-500 hover:bg-learning-500 hover:text-white focus:ring-learning-500',
-    danger: 'bg-red-500 text-white hover:bg-red-600 focus:ring-red-500',
+    primary: 'bg-learning-500 hover:bg-learning-600 focus:ring-learning-500',
+    secondary: 'bg-achievement-500 hover:bg-achievement-600 focus:ring-achievement-500',
+    accent: 'bg-focus-500 hover:bg-focus-600 focus:ring-focus-500',
+    ghost: 'bg-transparent border-2 border-learning-500 hover:bg-learning-500 focus:ring-learning-500',
+    danger: 'bg-red-500 hover:bg-red-600 focus:ring-red-500',
   }
 
   const sizeStyles = {
@@ -46,7 +46,7 @@ const Button: React.FC<ButtonProps> = ({
       className={combinedClassName}
       onClick={onClick}
       disabled={disabled || loading}
-      style={{ borderRadius: '0px' }} // Pronounced edges
+      style={{ borderRadius: '0px', color: '#ff6b35' }} // Pronounced edges & orange text
     >
       {loading && (
         <svg
