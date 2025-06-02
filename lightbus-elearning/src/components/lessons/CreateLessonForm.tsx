@@ -1,12 +1,14 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { CreateLessonData } from '@/types'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import Card from '@/components/ui/Card'
+import DateTimePicker from '@/components/ui/DateTimePicker'
+import MultiSelect from '@/components/ui/MultiSelect'
 
 interface CreateLessonFormProps {
   onSuccess?: (lessonId: string) => void
@@ -19,7 +21,13 @@ interface FormData {
   scheduled_at: string
   scheduled_time: string
   duration_minutes: string
-  student_emails: string
+  selected_students: string[]
+}
+
+interface Student {
+  id: string
+  name: string
+  email: string
 }
 
 interface FormErrors {
@@ -28,7 +36,7 @@ interface FormErrors {
   scheduled_at?: string
   scheduled_time?: string
   duration_minutes?: string
-  student_emails?: string
+  selected_students?: string
   general?: string
 }
 
@@ -40,11 +48,49 @@ export default function CreateLessonForm({ onSuccess, onCancel }: CreateLessonFo
     scheduled_at: '',
     scheduled_time: '',
     duration_minutes: '',
-    student_emails: ''
+    selected_students: []
   })
   const [errors, setErrors] = useState<FormErrors>({})
   const [isLoading, setIsLoading] = useState(false)
+  const [loadingStudents, setLoadingStudents] = useState(false)
+  const [students, setStudents] = useState<Student[]>([])
   const [step, setStep] = useState(1)
+
+  // Set default date and time
+  useEffect(() => {
+    const tomorrow = new Date()
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    const tomorrowDate = tomorrow.toISOString().split('T')[0]
+    
+    setFormData(prev => ({
+      ...prev,
+      scheduled_at: tomorrowDate,
+      scheduled_time: '10:00'
+    }))
+  }, [])
+
+  // Fetch available students
+  useEffect(() => {
+    const fetchStudents = async () => {
+      setLoadingStudents(true)
+      try {
+        const { data, error } = await supabase.rpc('get_available_students')
+        
+        if (error) throw error
+        
+        if (data?.success && data?.data) {
+          setStudents(data.data)
+        }
+      } catch (error: any) {
+        console.error('Error fetching students:', error)
+        setErrors(prev => ({ ...prev, general: 'Failed to load students' }))
+      } finally {
+        setLoadingStudents(false)
+      }
+    }
+
+    fetchStudents()
+  }, [])
 
   const validateStep1 = () => {
     const newErrors: FormErrors = {}
@@ -78,19 +124,7 @@ export default function CreateLessonForm({ onSuccess, onCancel }: CreateLessonFo
 
   const validateStep2 = () => {
     const newErrors: FormErrors = {}
-
-    if (formData.student_emails.trim()) {
-      const emails = formData.student_emails.split('\n').map(email => email.trim()).filter(email => email)
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      
-      for (const email of emails) {
-        if (!emailRegex.test(email)) {
-          newErrors.student_emails = `Invalid email format: ${email}`
-          break
-        }
-      }
-    }
-
+    // No validation needed for student selection as it's optional
     return newErrors
   }
 
@@ -156,24 +190,24 @@ export default function CreateLessonForm({ onSuccess, onCancel }: CreateLessonFo
       const lessonId = lessonResult.data.id
 
       // Add students if provided
-      if (formData.student_emails.trim()) {
-        const emails = formData.student_emails.split('\n')
-          .map(email => email.trim())
-          .filter(email => email)
-
-        const enrollmentPromises = emails.map(email =>
-          supabase.rpc('add_lesson_participant', {
+      if (formData.selected_students.length > 0) {
+        const enrollmentPromises = formData.selected_students.map(studentId => {
+          const student = students.find(s => s.id === studentId)
+          return supabase.rpc('add_lesson_participant', {
             p_lesson_id: lessonId,
-            p_student_email: email
+            p_student_email: student?.email || ''
           })
-        )
+        })
 
         const enrollmentResults = await Promise.all(enrollmentPromises)
         
         // Check for enrollment errors (non-critical)
         const enrollmentErrors = enrollmentResults
           .filter(result => result.error || !result.data?.success)
-          .map((result, index) => `${emails[index]}: ${result.error?.message || result.data?.error || 'Unknown error'}`)
+          .map((result, index) => {
+            const student = students.find(s => s.id === formData.selected_students[index])
+            return `${student?.email}: ${result.error?.message || result.data?.error || 'Unknown error'}`
+          })
 
         if (enrollmentErrors.length > 0) {
           console.warn('Some students could not be enrolled:', enrollmentErrors)
@@ -204,11 +238,32 @@ export default function CreateLessonForm({ onSuccess, onCancel }: CreateLessonFo
     }
   }
 
-  const getTomorrowDate = () => {
-    const tomorrow = new Date()
-    tomorrow.setDate(tomorrow.getDate() + 1)
-    return tomorrow.toISOString().split('T')[0]
+  const handleDateChange = (date: string) => {
+    setFormData(prev => ({ ...prev, scheduled_at: date }))
+    if (errors.scheduled_at) {
+      setErrors(prev => ({ ...prev, scheduled_at: undefined }))
+    }
   }
+
+  const handleTimeChange = (time: string) => {
+    setFormData(prev => ({ ...prev, scheduled_time: time }))
+    if (errors.scheduled_time) {
+      setErrors(prev => ({ ...prev, scheduled_time: undefined }))
+    }
+  }
+
+  const handleStudentsChange = (selectedStudents: string[]) => {
+    setFormData(prev => ({ ...prev, selected_students: selectedStudents }))
+    if (errors.selected_students) {
+      setErrors(prev => ({ ...prev, selected_students: undefined }))
+    }
+  }
+
+  const studentOptions = students.map(student => ({
+    value: student.id,
+    label: student.name,
+    email: student.email
+  }))
 
   return (
     <Card variant="default" padding="lg" className="max-w-2xl mx-auto">
@@ -264,29 +319,16 @@ export default function CreateLessonForm({ onSuccess, onCancel }: CreateLessonFo
               error={errors.description}
             />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input
-                type="text"
-                label="Date"
-                placeholder="Select date"
-                value={formData.scheduled_at}
-                onChange={handleChange('scheduled_at')}
-                error={errors.scheduled_at}
-                required
-                className="[&>input]:appearance-none [&>input]:bg-white"
-                // Use a date input type but render as text to avoid browser date picker issues
-              />
-
-              <Input
-                type="text"
-                label="Time"
-                placeholder="e.g., 10:00"
-                value={formData.scheduled_time}
-                onChange={handleChange('scheduled_time')}
-                error={errors.scheduled_time}
-                required
-              />
-            </div>
+            <DateTimePicker
+              dateValue={formData.scheduled_at}
+              timeValue={formData.scheduled_time}
+              onDateChange={handleDateChange}
+              onTimeChange={handleTimeChange}
+              dateError={errors.scheduled_at}
+              timeError={errors.scheduled_time}
+              required
+              disabled={isLoading}
+            />
 
             <Input
               type="number"
@@ -323,15 +365,34 @@ export default function CreateLessonForm({ onSuccess, onCancel }: CreateLessonFo
           <div className="space-y-6">
             <h3 className="heading-4 text-teacher-600">👥 Add Students (Optional)</h3>
             
-            <Input
-              type="textarea"
-              label="Student Email Addresses"
-              placeholder="Enter one email per line:&#10;student1@example.com&#10;student2@example.com&#10;student3@example.com"
-              value={formData.student_emails}
-              onChange={handleChange('student_emails')}
-              error={errors.student_emails}
-              className="min-h-32"
+            <MultiSelect
+              options={studentOptions}
+              value={formData.selected_students}
+              onChange={handleStudentsChange}
+              placeholder={loadingStudents ? "Loading students..." : "Search and select students..."}
+              label="Select Students"
+              error={errors.selected_students}
+              searchable={true}
+              maxHeight="max-h-60"
             />
+
+            {formData.selected_students.length > 0 && (
+              <div className="p-4 bg-learning-50 border border-learning-200">
+                <h4 className="font-semibold text-learning-600 mb-2">
+                  📋 Selected Students ({formData.selected_students.length})
+                </h4>
+                <div className="space-y-1">
+                  {formData.selected_students.map(studentId => {
+                    const student = students.find(s => s.id === studentId)
+                    return student ? (
+                      <div key={studentId} className="text-sm text-neutral-gray">
+                        • {student.name} ({student.email})
+                      </div>
+                    ) : null
+                  })}
+                </div>
+              </div>
+            )}
 
             <div className="p-4 bg-learning-50 border border-learning-200">
               <h4 className="font-semibold text-learning-600 mb-2">💡 Pro Tip</h4>
@@ -374,34 +435,6 @@ export default function CreateLessonForm({ onSuccess, onCancel }: CreateLessonFo
           </div>
         )}
       </form>
-
-      {/* Enhanced date/time picker */}
-      <script dangerouslySetInnerHTML={{
-        __html: `
-          // Simple date/time helper
-          document.addEventListener('DOMContentLoaded', function() {
-            const dateInput = document.querySelector('input[placeholder="Select date"]');
-            const timeInput = document.querySelector('input[placeholder="e.g., 10:00"]');
-            
-            if (dateInput) {
-              dateInput.type = 'date';
-              dateInput.min = new Date().toISOString().split('T')[0];
-              if (!dateInput.value) {
-                const tomorrow = new Date();
-                tomorrow.setDate(tomorrow.getDate() + 1);
-                dateInput.value = tomorrow.toISOString().split('T')[0];
-              }
-            }
-            
-            if (timeInput) {
-              timeInput.type = 'time';
-              if (!timeInput.value) {
-                timeInput.value = '10:00';
-              }
-            }
-          });
-        `
-      }} />
     </Card>
   )
 }

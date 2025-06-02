@@ -9,6 +9,7 @@ import Button from '@/components/ui/Button'
 import Card from '@/components/ui/Card'
 import Input from '@/components/ui/Input'
 import Modal from '@/components/ui/Modal'
+import ConfirmationModal from '@/components/ui/ConfirmationModal'
 
 interface LessonParticipant {
   student_id: string
@@ -35,6 +36,8 @@ export default function TeacherLessonDetailPage() {
   const [showAddStudent, setShowAddStudent] = useState(false)
   const [newStudentEmail, setNewStudentEmail] = useState('')
   const [isAddingStudent, setIsAddingStudent] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
     if (lessonId) {

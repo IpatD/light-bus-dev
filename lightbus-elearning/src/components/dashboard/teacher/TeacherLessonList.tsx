@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { Lesson } from '@/types'
 import Button from '@/components/ui/Button'
 import Card from '@/components/ui/Card'
+import ConfirmationModal from '@/components/ui/ConfirmationModal'
 
 interface TeacherLessonListProps {
   className?: string
@@ -21,6 +22,9 @@ export default function TeacherLessonList({ className = '' }: TeacherLessonListP
   const [lessons, setLessons] = useState<LessonWithStats[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [lessonToDelete, setLessonToDelete] = useState<LessonWithStats | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
     fetchLessons()
@@ -69,6 +73,50 @@ export default function TeacherLessonList({ className = '' }: TeacherLessonListP
     if (lesson.pending_cards > 0) return `${lesson.pending_cards} pending`
     if (lesson.student_count === 0) return 'No students'
     return 'Active'
+  }
+
+  const handleDeleteClick = (lesson: LessonWithStats) => {
+    setLessonToDelete(lesson)
+    setShowDeleteModal(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!lessonToDelete) return
+
+    setIsDeleting(true)
+    try {
+      const { data, error } = await supabase.rpc('delete_lesson', {
+        p_lesson_id: lessonToDelete.id
+      })
+
+      if (error) throw error
+
+      if (!data?.success) {
+        throw new Error(data?.error || 'Failed to delete lesson')
+      }
+
+      // Remove the deleted lesson from the list
+      setLessons(prevLessons =>
+        prevLessons.filter(lesson => lesson.id !== lessonToDelete.id)
+      )
+
+      // Close modal and reset state
+      setShowDeleteModal(false)
+      setLessonToDelete(null)
+
+      // Show success message (you might want to use a toast notification here)
+      console.log('Lesson deleted successfully:', data.message)
+    } catch (error: any) {
+      console.error('Error deleting lesson:', error)
+      alert(error.message || 'Failed to delete lesson')
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  const handleDeleteCancel = () => {
+    setShowDeleteModal(false)
+    setLessonToDelete(null)
   }
 
   if (isLoading) {
@@ -167,6 +215,16 @@ export default function TeacherLessonList({ className = '' }: TeacherLessonListP
                       Analytics
                     </Button>
                   </Link>
+
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDeleteClick(lesson)}
+                    className="text-red-600 hover:bg-red-50"
+                    title="Delete lesson"
+                  >
+                    🗑️
+                  </Button>
                 </div>
               </div>
             </div>
@@ -183,6 +241,23 @@ export default function TeacherLessonList({ className = '' }: TeacherLessonListP
           )}
         </div>
       )}
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Lesson"
+        message={
+          lessonToDelete
+            ? `Are you sure you want to delete "${lessonToDelete.name}"? This action cannot be undone and will remove all associated cards, student progress, and lesson data.${lessonToDelete.student_count > 0 ? ` This lesson has ${lessonToDelete.student_count} enrolled student${lessonToDelete.student_count > 1 ? 's' : ''}.` : ''}`
+            : ''
+        }
+        confirmText="Delete Lesson"
+        cancelText="Cancel"
+        isLoading={isDeleting}
+        variant="danger"
+      />
     </Card>
   )
 }
