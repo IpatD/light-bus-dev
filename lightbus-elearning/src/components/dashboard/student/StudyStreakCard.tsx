@@ -2,7 +2,6 @@
 
 import React from 'react'
 import { Flame, Calendar, Trophy, Target } from 'lucide-react'
-import Card from '@/components/ui/Card'
 
 interface StudyStreakCardProps {
   currentStreak: number
@@ -26,140 +25,137 @@ const StudyStreakCard: React.FC<StudyStreakCardProps> = ({
   const isGoalReached = weeklyProgress >= weeklyGoal
   
   return (
-    <Card variant="default" padding="lg" className="h-full">
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <h3 className="heading-4">🔥 Study Streak</h3>
-          <StreakBadge level={streakLevel} />
-        </div>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <StreakBadge level={streakLevel} />
+      </div>
 
-        {/* Main Streak Display */}
-        <div className="text-center py-4">
-          <div className="relative">
-            {/* Flame Animation */}
-            <div className={`text-6xl mb-2 ${getFlameAnimation(currentStreak)}`}>
-              {currentStreak > 0 ? '🔥' : '💨'}
-            </div>
-            
-            {/* Streak Number */}
-            <div className="text-4xl font-bold text-achievement-500 mb-1">
-              {currentStreak}
-            </div>
-            <div className="text-sm font-semibold text-neutral-charcoal">
-              {currentStreak === 1 ? 'Day Streak' : 'Days Streak'}
-            </div>
-            
-            {/* Streak Status */}
-            <div className="mt-2">
-              {currentStreak === 0 ? (
-                <span className="text-neutral-gray text-sm">
-                  Start studying today to begin your streak!
-                </span>
-              ) : currentStreak < 3 ? (
-                <span className="text-learning-600 text-sm font-medium">
-                  Keep it up! 🌟
-                </span>
-              ) : currentStreak < 7 ? (
-                <span className="text-achievement-600 text-sm font-medium">
-                  You're on fire! 🚀
-                </span>
-              ) : (
-                <span className="text-green-600 text-sm font-medium">
-                  Incredible dedication! 🏆
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Statistics Grid */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="text-center p-3 bg-focus-50 border border-focus-200">
-            <div className="text-xl font-bold text-focus-600">{longestStreak}</div>
-            <div className="text-xs text-focus-700">Best Streak</div>
-          </div>
-          <div className="text-center p-3 bg-learning-50 border border-learning-200">
-            <div className="text-xl font-bold text-learning-600">{totalStudyDays}</div>
-            <div className="text-xs text-learning-700">Total Days</div>
-          </div>
-        </div>
-
-        {/* Weekly Goal Progress */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-neutral-charcoal">Weekly Goal</span>
-            <span className="text-sm text-neutral-gray">
-              {weeklyProgress}/{weeklyGoal} days
-            </span>
+      {/* Main Streak Display */}
+      <div className="text-center py-4">
+        <div className="relative">
+          {/* Flame Animation */}
+          <div className={`text-6xl mb-2 ${getFlameAnimation(currentStreak)}`}>
+            {currentStreak > 0 ? '🔥' : '💨'}
           </div>
           
-          <div className="relative">
-            <div className="w-full bg-neutral-gray bg-opacity-20 h-3">
-              <div 
-                className={`h-3 transition-all duration-500 ${
-                  isGoalReached ? 'bg-green-500' : 'bg-achievement-500'
-                }`}
-                style={{ width: `${progressPercentage}%` }}
-              ></div>
-            </div>
-            
-            {/* Goal Achievement Badge */}
-            {isGoalReached && (
-              <div className="absolute -top-1 -right-1">
-                <div className="bg-green-500 text-white p-1 text-xs font-bold">
-                  <Trophy size={12} />
-                </div>
-              </div>
-            )}
+          {/* Streak Number */}
+          <div className="text-4xl font-bold text-achievement-500 mb-1">
+            {currentStreak}
+          </div>
+          <div className="text-sm font-semibold text-neutral-charcoal">
+            {currentStreak === 1 ? 'Day Streak' : 'Days Streak'}
           </div>
           
-          <div className="text-center">
-            {isGoalReached ? (
-              <span className="text-green-600 text-sm font-medium">
-                🎉 Weekly goal achieved!
+          {/* Streak Status */}
+          <div className="mt-2">
+            {currentStreak === 0 ? (
+              <span className="text-neutral-gray text-sm">
+                Start studying today to begin your streak!
+              </span>
+            ) : currentStreak < 3 ? (
+              <span className="text-learning-600 text-sm font-medium">
+                Keep it up! 🌟
+              </span>
+            ) : currentStreak < 7 ? (
+              <span className="text-achievement-600 text-sm font-medium">
+                You're on fire! 🚀
               </span>
             ) : (
-              <span className="text-neutral-gray text-sm">
-                {weeklyGoal - weeklyProgress} more days to reach your goal
+              <span className="text-green-600 text-sm font-medium">
+                Incredible dedication! 🏆
               </span>
             )}
-          </div>
-        </div>
-
-        {/* Next Review Info */}
-        {nextReviewDate && (
-          <div className="p-3 bg-learning-50 border-l-4 border-learning-500">
-            <div className="flex items-center gap-2 text-sm">
-              <Calendar size={16} className="text-learning-600" />
-              <span className="text-learning-700">
-                Next review: {formatNextReviewDate(nextReviewDate)}
-              </span>
-            </div>
-          </div>
-        )}
-
-        {/* Motivational Messages */}
-        <div className="text-center">
-          <MotivationalMessage currentStreak={currentStreak} weeklyProgress={weeklyProgress} />
-        </div>
-
-        {/* Achievement Preview */}
-        <div className="space-y-2">
-          <h4 className="text-sm font-semibold text-neutral-charcoal">Upcoming Achievements</h4>
-          <div className="space-y-1">
-            {getUpcomingAchievements(currentStreak).map((achievement, index) => (
-              <div key={index} className="flex items-center justify-between text-xs">
-                <span className="text-neutral-gray">{achievement.name}</span>
-                <span className="text-achievement-600 font-medium">
-                  {achievement.daysLeft} days
-                </span>
-              </div>
-            ))}
           </div>
         </div>
       </div>
-    </Card>
+
+      {/* Statistics Grid */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="text-center p-3 bg-focus-50 border border-focus-200 rounded-lg">
+          <div className="text-xl font-bold text-focus-600">{longestStreak}</div>
+          <div className="text-xs text-focus-700">Best Streak</div>
+        </div>
+        <div className="text-center p-3 bg-learning-50 border border-learning-200 rounded-lg">
+          <div className="text-xl font-bold text-learning-600">{totalStudyDays}</div>
+          <div className="text-xs text-learning-700">Total Days</div>
+        </div>
+      </div>
+
+      {/* Weekly Goal Progress */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium text-neutral-charcoal">Weekly Goal</span>
+          <span className="text-sm text-neutral-gray">
+            {weeklyProgress}/{weeklyGoal} days
+          </span>
+        </div>
+        
+        <div className="relative">
+          <div className="w-full bg-neutral-gray bg-opacity-20 rounded-full h-3">
+            <div 
+              className={`h-3 rounded-full transition-all duration-500 ${
+                isGoalReached ? 'bg-green-500' : 'bg-achievement-500'
+              }`}
+              style={{ width: `${progressPercentage}%` }}
+            ></div>
+          </div>
+          
+          {/* Goal Achievement Badge */}
+          {isGoalReached && (
+            <div className="absolute -top-1 -right-1">
+              <div className="bg-green-500 text-white p-1 rounded-full text-xs font-bold">
+                <Trophy size={12} />
+              </div>
+            </div>
+          )}
+        </div>
+        
+        <div className="text-center">
+          {isGoalReached ? (
+            <span className="text-green-600 text-sm font-medium">
+              🎉 Weekly goal achieved!
+            </span>
+          ) : (
+            <span className="text-neutral-gray text-sm">
+              {weeklyGoal - weeklyProgress} more days to reach your goal
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Next Review Info */}
+      {nextReviewDate && (
+        <div className="p-3 bg-learning-50 border-l-4 border-learning-500 rounded">
+          <div className="flex items-center gap-2 text-sm">
+            <Calendar size={16} className="text-learning-600" />
+            <span className="text-learning-700">
+              Next review: {formatNextReviewDate(nextReviewDate)}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Motivational Messages */}
+      <div className="text-center">
+        <MotivationalMessage currentStreak={currentStreak} weeklyProgress={weeklyProgress} />
+      </div>
+
+      {/* Achievement Preview */}
+      <div className="space-y-2">
+        <h4 className="text-sm font-semibold text-neutral-charcoal">Upcoming Achievements</h4>
+        <div className="space-y-1">
+          {getUpcomingAchievements(currentStreak).map((achievement, index) => (
+            <div key={index} className="flex items-center justify-between text-xs">
+              <span className="text-neutral-gray">{achievement.name}</span>
+              <span className="text-achievement-600 font-medium">
+                {achievement.daysLeft} days
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -179,7 +175,7 @@ const StreakBadge: React.FC<StreakBadgeProps> = ({ level }) => {
   const { bg, text, label } = config[level]
 
   return (
-    <div className={`${bg} ${text} px-2 py-1 text-xs font-semibold`}>
+    <div className={`${bg} ${text} px-3 py-1 rounded-full text-xs font-semibold`}>
       {label}
     </div>
   )

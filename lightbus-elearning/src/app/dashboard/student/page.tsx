@@ -241,7 +241,7 @@ export default function StudentDashboard() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-neutral-white flex items-center justify-center">
+      <div className="bg-neutral-white flex items-center justify-center">
         <Card variant="default" padding="lg" className="text-center">
           <h2 className="heading-3 mb-4">Access Denied</h2>
           <p className="text-neutral-gray mb-6">Please sign in to access your dashboard.</p>
@@ -254,172 +254,204 @@ export default function StudentDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-white">
-      <div className="container-main py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="heading-2 mb-2">
-            Welcome back, <span className="text-learning-500">{user.name}</span>! 🎓
-          </h1>
-          <p className="body-medium text-neutral-gray">
-            Ready to continue your learning journey? Let's see what's waiting for you today.
-          </p>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-neutral-white to-gray-50">
+      {/* Main Dashboard Container */}
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
+        
+        {/* Welcome Header Section */}
+        <section className="mb-10">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+            <h1 className="heading-2 mb-3">
+              Welcome back, <span className="text-learning-500">{user.name}</span>! 🎓
+            </h1>
+            <p className="body-medium text-neutral-gray">
+              Ready to continue your learning journey? Let's see what's waiting for you today.
+            </p>
+          </div>
+        </section>
 
-        {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card variant="primary" padding="lg" className="text-center">
-            <div className="text-3xl font-bold text-learning-500 mb-2">
-              {stats?.cards_due_today || 0}
-            </div>
-            <div className="text-sm font-semibold text-neutral-charcoal">Cards Due Today</div>
-          </Card>
+        {/* Key Metrics Overview */}
+        <section className="mb-10">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <h2 className="heading-4 mb-6 text-neutral-charcoal">📊 Today's Overview</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="bg-gradient-to-br from-learning-500 to-learning-600 text-white rounded-xl p-6 text-center shadow-lg">
+                <div className="text-3xl font-bold mb-2">
+                  {stats?.cards_due_today || 0}
+                </div>
+                <div className="text-sm font-semibold opacity-90">Cards Due Today</div>
+              </div>
 
-          <Card variant="default" padding="lg" className="text-center">
-            <div className="text-3xl font-bold text-achievement-500 mb-2">
-              {stats?.study_streak || 0}
-            </div>
-            <div className="text-sm font-semibold text-neutral-charcoal">Study Streak</div>
-            <div className="text-xs text-neutral-gray">days</div>
-          </Card>
+              <div className="bg-gradient-to-br from-achievement-500 to-achievement-600 text-white rounded-xl p-6 text-center shadow-lg">
+                <div className="text-3xl font-bold mb-2">
+                  {stats?.study_streak || 0}
+                </div>
+                <div className="text-sm font-semibold opacity-90">Study Streak</div>
+                <div className="text-xs opacity-75">days</div>
+              </div>
 
-          <Card variant="default" padding="lg" className="text-center">
-            <div className="text-3xl font-bold text-focus-500 mb-2">
-              {stats?.cards_learned || 0}
-            </div>
-            <div className="text-sm font-semibold text-neutral-charcoal">Cards Learned</div>
-          </Card>
+              <div className="bg-gradient-to-br from-focus-500 to-focus-600 text-white rounded-xl p-6 text-center shadow-lg">
+                <div className="text-3xl font-bold mb-2">
+                  {stats?.cards_learned || 0}
+                </div>
+                <div className="text-sm font-semibold opacity-90">Cards Learned</div>
+              </div>
 
-          <Card variant="default" padding="lg" className="text-center">
-            <div className="text-3xl font-bold text-neutral-charcoal mb-2">
-              {stats?.total_reviews || 0}
-            </div>
-            <div className="text-sm font-semibold text-neutral-charcoal">Total Reviews</div>
-          </Card>
-        </div>
-
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Due Cards Section - Takes up 2 columns */}
-          <div className="lg:col-span-2 space-y-8">
-            <DueCardsSection
-              cards={dueCards}
-              totalDue={stats?.cards_due_today || 0}
-              isLoading={false}
-              onStartSession={handleStartStudySession}
-            />
-
-            {/* Progress Chart */}
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="heading-3">📈 Learning Analytics</h2>
-              <div className="flex gap-2">
-                <Button
-                  variant={chartType === 'weekly' ? 'primary' : 'ghost'}
-                  size="sm"
-                  onClick={() => setChartType('weekly')}
-                >
-                  Week
-                </Button>
-                <Button
-                  variant={chartType === 'monthly' ? 'primary' : 'ghost'}
-                  size="sm"
-                  onClick={() => setChartType('monthly')}
-                >
-                  Month
-                </Button>
+              <div className="bg-gradient-to-br from-gray-600 to-gray-700 text-white rounded-xl p-6 text-center shadow-lg">
+                <div className="text-3xl font-bold mb-2">
+                  {stats?.total_reviews || 0}
+                </div>
+                <div className="text-sm font-semibold opacity-90">Total Reviews</div>
               </div>
             </div>
-            <ProgressChart
-              weeklyData={stats?.weekly_progress || [0, 0, 0, 0, 0, 0, 0]}
-              monthlyData={stats?.monthly_progress || new Array(30).fill(0)}
-              type={chartType}
-            />
+          </div>
+        </section>
+
+        {/* Main Dashboard Grid */}
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
+          
+          {/* Primary Content Area */}
+          <div className="xl:col-span-8 space-y-8">
+            
+            {/* Study Session Section */}
+            <section>
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="p-6 border-b border-gray-100">
+                  <h2 className="heading-4 text-neutral-charcoal">📚 Study Session</h2>
+                  <p className="text-sm text-neutral-gray mt-1">Review your due cards and keep your streak alive</p>
+                </div>
+                <div className="p-6">
+                  <DueCardsSection
+                    cards={dueCards}
+                    totalDue={stats?.cards_due_today || 0}
+                    isLoading={false}
+                    onStartSession={handleStartStudySession}
+                  />
+                </div>
+              </div>
+            </section>
+
+            {/* Analytics Section */}
+            <section>
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="p-6 border-b border-gray-100">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="heading-4 text-neutral-charcoal">📈 Learning Analytics</h2>
+                      <p className="text-sm text-neutral-gray mt-1">Track your progress and study patterns</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant={chartType === 'weekly' ? 'primary' : 'ghost'}
+                        size="sm"
+                        onClick={() => setChartType('weekly')}
+                      >
+                        Week
+                      </Button>
+                      <Button
+                        variant={chartType === 'monthly' ? 'primary' : 'ghost'}
+                        size="sm"
+                        onClick={() => setChartType('monthly')}
+                      >
+                        Month
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-6">
+                  <ProgressChart
+                    weeklyData={stats?.weekly_progress || [0, 0, 0, 0, 0, 0, 0]}
+                    monthlyData={stats?.monthly_progress || new Array(30).fill(0)}
+                    type={chartType}
+                  />
+                </div>
+              </div>
+            </section>
           </div>
 
-          {/* Right Sidebar */}
-          <div className="space-y-6">
-            {/* Study Streak Card */}
-            <StudyStreakCard
-              currentStreak={stats?.study_streak || 0}
-              longestStreak={stats?.study_streak || 0} // In a real app, you'd track this separately
-              totalStudyDays={Math.min(stats?.total_reviews || 0, 100)} // Simplified calculation
-              weeklyGoal={7}
-              weeklyProgress={Math.min(stats?.study_streak || 0, 7)}
-              nextReviewDate={stats?.next_review_date}
-            />
-
-            {/* Recent Lessons */}
-            <RecentLessonsSection
-              lessons={recentLessons}
-              isLoading={false}
-              onStartStudy={handleStartStudySession}
-            />
-
-            {/* Quick Actions */}
-            <Card variant="accent" padding="lg">
-              <h3 className="heading-4 mb-4">⚡ Quick Actions</h3>
-              <div className="space-y-3">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="w-full justify-start border-focus-300 text-focus-700 hover:bg-focus-50"
-                  onClick={() => router.push('/progress')}
-                >
-                  📊 View Detailed Progress
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="w-full justify-start border-focus-300 text-focus-700 hover:bg-focus-50"
-                  onClick={() => router.push('/lessons')}
-                >
-                  📚 Browse All Lessons
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="w-full justify-start border-focus-300 text-focus-700 hover:bg-focus-50"
-                  onClick={() => router.push('/settings')}
-                >
-                  ⚙️ Settings
-                </Button>
+          {/* Sidebar Content */}
+          <div className="xl:col-span-4 space-y-8">
+            
+            {/* Study Streak Section */}
+            <section>
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="p-6 border-b border-gray-100">
+                  <h3 className="heading-5 text-neutral-charcoal">🔥 Study Streak</h3>
+                  <p className="text-sm text-neutral-gray mt-1">Keep the momentum going</p>
+                </div>
+                <div className="p-6">
+                  <StudyStreakCard
+                    currentStreak={stats?.study_streak || 0}
+                    longestStreak={stats?.study_streak || 0}
+                    totalStudyDays={Math.min(stats?.total_reviews || 0, 100)}
+                    weeklyGoal={7}
+                    weeklyProgress={Math.min(stats?.study_streak || 0, 7)}
+                    nextReviewDate={stats?.next_review_date}
+                  />
+                </div>
               </div>
-            </Card>
+            </section>
+
+            {/* Recent Lessons Section */}
+            <section>
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="p-6 border-b border-gray-100">
+                  <h3 className="heading-5 text-neutral-charcoal">📖 Recent Lessons</h3>
+                  <p className="text-sm text-neutral-gray mt-1">Continue where you left off</p>
+                </div>
+                <div className="p-6">
+                  <RecentLessonsSection
+                    lessons={recentLessons}
+                    isLoading={false}
+                    onStartStudy={handleStartStudySession}
+                  />
+                </div>
+              </div>
+            </section>
+
+            {/* Quick Actions Section */}
+            <section>
+              <div className="bg-gradient-to-br from-focus-50 to-learning-50 rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="p-6 border-b border-white/50">
+                  <h3 className="heading-5 text-neutral-charcoal">⚡ Quick Actions</h3>
+                  <p className="text-sm text-neutral-gray mt-1">Navigate to key features</p>
+                </div>
+                <div className="p-6">
+                  <div className="space-y-3">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full justify-start bg-white/60 border-white/80 text-focus-700 hover:bg-white/80 shadow-sm"
+                      onClick={() => router.push('/progress')}
+                    >
+                      📊 View Detailed Progress
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full justify-start bg-white/60 border-white/80 text-focus-700 hover:bg-white/80 shadow-sm"
+                      onClick={() => router.push('/lessons')}
+                    >
+                      📚 Browse All Lessons
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full justify-start bg-white/60 border-white/80 text-focus-700 hover:bg-white/80 shadow-sm"
+                      onClick={() => router.push('/settings')}
+                    >
+                      ⚙️ Settings
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </section>
           </div>
         </div>
 
-        {/* Study Tips */}
-        <div className="mt-8">
-          <Card variant="default" padding="lg">
-            <div className="flex items-start space-x-4">
-              <div className="bg-achievement-100 text-achievement-600 p-3 text-2xl">
-                💡
-              </div>
-              <div>
-                <h3 className="heading-4 mb-2">Study Tip of the Day</h3>
-                <p className="text-neutral-gray">
-                  {getRandomStudyTip()}
-                </p>
-              </div>
-            </div>
-          </Card>
-        </div>
+        {/* Footer Spacer */}
+        <div className="mt-16"></div>
       </div>
     </div>
   )
-}
-
-// Helper function for random study tips
-function getRandomStudyTip(): string {
-  const tips = [
-    "Spaced repetition works best when you study consistently. Even 10-15 minutes daily is more effective than cramming for hours once a week.",
-    "When you struggle with a card, try to understand the underlying concept rather than just memorizing the answer.",
-    "Take breaks between study sessions. Your brain consolidates information better when you give it time to rest.",
-    "Review cards in different contexts and environments to strengthen your memory connections.",
-    "Don't worry about getting cards wrong initially - making mistakes is a crucial part of the learning process.",
-    "Focus on understanding rather than speed. Quality of learning is more important than quantity.",
-    "Use the full rating scale (0-5) honestly. Accurate self-assessment leads to better spaced repetition scheduling."
-  ]
-  
-  return tips[Math.floor(Math.random() * tips.length)]
 }

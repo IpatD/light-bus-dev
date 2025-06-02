@@ -58,11 +58,10 @@ const DueCardsSection: React.FC<DueCardsSectionProps> = ({
   }
 
   return (
-    <Card variant="default" padding="lg">
+    <div>
       {/* Header with urgency indicator */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <h2 className="heading-3">📚 Due for Review</h2>
           <UrgencyBadge level={urgencyLevel} count={totalDue} overdueCount={overdueCount} />
         </div>
         
@@ -146,7 +145,7 @@ const DueCardsSection: React.FC<DueCardsSectionProps> = ({
           </div>
         </>
       )}
-    </Card>
+    </div>
   )
 }
 

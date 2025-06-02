@@ -4,7 +4,7 @@ import Card from '@/components/ui/Card'
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen">
+    <div>
       {/* Hero Section */}
       <section className="bg-gradient-to-br from-learning-50 to-achievement-50 py-20">
         <div className="container-main">

@@ -46,9 +46,8 @@ const RecentLessonsSection: React.FC<RecentLessonsSectionProps> = ({
   }
 
   return (
-    <Card variant="default" padding="lg">
+    <div>
       <div className="flex items-center justify-between mb-6">
-        <h3 className="heading-4">📖 Recent Lessons</h3>
         <Link href="/lessons">
           <Button variant="ghost" size="sm">
             View All
@@ -79,7 +78,7 @@ const RecentLessonsSection: React.FC<RecentLessonsSectionProps> = ({
           )}
         </div>
       )}
-    </Card>
+    </div>
   )
 }
 

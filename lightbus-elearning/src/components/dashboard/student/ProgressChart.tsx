@@ -2,7 +2,6 @@
 
 import React from 'react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts'
-import Card from '@/components/ui/Card'
 
 interface ProgressChartProps {
   weeklyData: number[]
@@ -50,7 +49,7 @@ const ProgressChart: React.FC<ProgressChartProps> = ({
     if (active && payload && payload.length) {
       const data = payload[0].payload
       return (
-        <div className="bg-white p-3 border border-neutral-charcoal shadow-lg">
+        <div className="bg-white p-3 border border-neutral-charcoal shadow-lg rounded-lg">
           <p className="font-semibold text-neutral-charcoal">
             {type === 'weekly' ? data.day : `${data.month} ${data.day}`}
           </p>
@@ -64,39 +63,19 @@ const ProgressChart: React.FC<ProgressChartProps> = ({
   }
 
   return (
-    <Card variant="default" padding="lg" className="h-full">
+    <div className="h-full">
       <div className="mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="heading-4">📈 Study Progress</h3>
-          <div className="flex gap-2">
-            <span className={`px-3 py-1 text-xs font-semibold ${
-              type === 'weekly' 
-                ? 'bg-learning-500 text-white' 
-                : 'bg-neutral-gray bg-opacity-20 text-neutral-charcoal'
-            }`}>
-              Week
-            </span>
-            <span className={`px-3 py-1 text-xs font-semibold ${
-              type === 'monthly' 
-                ? 'bg-learning-500 text-white' 
-                : 'bg-neutral-gray bg-opacity-20 text-neutral-charcoal'
-            }`}>
-              Month
-            </span>
-          </div>
-        </div>
-
         {/* Statistics Row */}
         <div className="grid grid-cols-3 gap-4 mb-6">
-          <div className="text-center">
+          <div className="text-center p-4 bg-learning-50 rounded-lg border border-learning-200">
             <div className="text-xl font-bold text-learning-500">{totalReviews}</div>
             <div className="text-xs text-neutral-gray">Total Reviews</div>
           </div>
-          <div className="text-center">
+          <div className="text-center p-4 bg-achievement-50 rounded-lg border border-achievement-200">
             <div className="text-xl font-bold text-achievement-500">{avgReviews.toFixed(1)}</div>
             <div className="text-xs text-neutral-gray">Daily Average</div>
           </div>
-          <div className="text-center">
+          <div className="text-center p-4 bg-focus-50 rounded-lg border border-focus-200">
             <div className="text-xl font-bold text-focus-500">{currentStreak}</div>
             <div className="text-xs text-neutral-gray">Current Streak</div>
           </div>
@@ -104,7 +83,7 @@ const ProgressChart: React.FC<ProgressChartProps> = ({
       </div>
 
       {/* Chart */}
-      <div className="h-64">
+      <div className="h-64 bg-white rounded-lg border border-gray-200 p-4">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
             <defs>
@@ -148,7 +127,7 @@ const ProgressChart: React.FC<ProgressChartProps> = ({
         <div className="mt-4 pt-4 border-t border-neutral-gray border-opacity-20">
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-learning-500"></div>
+              <div className="w-3 h-3 bg-learning-500 rounded-full"></div>
               <span className="text-neutral-gray">Best Day: {maxReviews} reviews</span>
             </div>
             {currentStreak >= 3 && (
@@ -160,7 +139,7 @@ const ProgressChart: React.FC<ProgressChartProps> = ({
           </div>
         </div>
       )}
-    </Card>
+    </div>
   )
 }
 

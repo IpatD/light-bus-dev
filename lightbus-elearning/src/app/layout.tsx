@@ -28,19 +28,19 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="h-full">
+    <html lang="en" className="min-h-full">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
-      <body className="h-full font-sans bg-neutral-white text-neutral-charcoal antialiased">
-        <div className="min-h-full flex flex-col">
+      <body className="min-h-screen font-sans bg-neutral-white text-neutral-charcoal antialiased">
+        <div className="min-h-screen flex flex-col">
           <Navigation />
-          <main className="flex-1">
+          <main className="flex-1 min-h-0">
             {children}
           </main>
-          <footer className="bg-neutral-charcoal text-white py-8 mt-auto">
-            <div className="container-main">
+          <footer className="bg-neutral-charcoal text-white py-8 mt-auto shrink-0 w-full">
+            <div className="container mx-auto px-4 max-w-7xl">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <div>
                   <h3 className="text-xl font-bold mb-4 text-achievement-500">🚌 Light Bus</h3>
