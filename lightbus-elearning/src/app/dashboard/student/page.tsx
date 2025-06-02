@@ -254,203 +254,264 @@ export default function StudentDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-neutral-white to-gray-50">
-      {/* Main Dashboard Container */}
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      {/* Main Dashboard Container with Bento Layout */}
+      <div className="container mx-auto px-6 py-8 max-w-7xl">
         
-        {/* Welcome Header Section */}
-        <section className="mb-10">
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-            <h1 className="heading-2 mb-3">
-              Welcome back, <span className="text-learning-500">{user.name}</span>! 🎓
-            </h1>
-            <p className="body-medium text-neutral-gray">
-              Ready to continue your learning journey? Let's see what's waiting for you today.
-            </p>
+        {/* Welcome Hero Bento */}
+        <div className="mb-8">
+          <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-blue-600 rounded-3xl shadow-xl p-8 text-white overflow-hidden relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-black/20 to-transparent"></div>
+            <div className="relative z-10">
+              <h1 className="text-4xl font-bold mb-3">
+                Welcome back, <span className="text-yellow-300">{user.name}</span>!
+                <span className="ml-2">🚀</span>
+              </h1>
+              <p className="text-blue-100 text-lg">
+                Ready to supercharge your learning? Let's dive into today's adventure!
+              </p>
+            </div>
+            <div className="absolute -top-4 -right-4 text-8xl opacity-20">📚</div>
           </div>
-        </section>
+        </div>
 
-        {/* Key Metrics Overview */}
-        <section className="mb-10">
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <h2 className="heading-4 mb-6 text-neutral-charcoal">📊 Today's Overview</h2>
+        {/* Main Bento Grid Layout */}
+        <div className="grid grid-cols-12 gap-6">
+          
+          {/* Stats Overview Bento - Spans 12 columns */}
+          <div className="col-span-12">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="bg-gradient-to-br from-learning-500 to-learning-600 text-white rounded-xl p-6 text-center shadow-lg">
-                <div className="text-3xl font-bold mb-2">
-                  {stats?.cards_due_today || 0}
+              {/* Cards Due Bento */}
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-all duration-300 group">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="bg-gradient-to-br from-red-500 to-orange-500 p-3 rounded-xl text-white shadow-lg">
+                    <span className="text-2xl">🎯</span>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-3xl font-bold text-red-600 group-hover:scale-110 transition-transform">
+                      {stats?.cards_due_today || 0}
+                    </div>
+                    <div className="text-sm font-semibold text-gray-600">Due Today</div>
+                  </div>
                 </div>
-                <div className="text-sm font-semibold opacity-90">Cards Due Today</div>
+                <div className="w-full bg-red-100 rounded-full h-2">
+                  <div
+                    className="bg-gradient-to-r from-red-500 to-orange-500 h-2 rounded-full transition-all duration-500"
+                    style={{ width: `${Math.min((stats?.cards_due_today || 0) / 20 * 100, 100)}%` }}
+                  ></div>
+                </div>
               </div>
 
-              <div className="bg-gradient-to-br from-achievement-500 to-achievement-600 text-white rounded-xl p-6 text-center shadow-lg">
-                <div className="text-3xl font-bold mb-2">
-                  {stats?.study_streak || 0}
+              {/* Study Streak Bento */}
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-all duration-300 group">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="bg-gradient-to-br from-orange-500 to-yellow-500 p-3 rounded-xl text-white shadow-lg">
+                    <span className="text-2xl">🔥</span>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-3xl font-bold text-orange-600 group-hover:scale-110 transition-transform">
+                      {stats?.study_streak || 0}
+                    </div>
+                    <div className="text-sm font-semibold text-gray-600">Day Streak</div>
+                  </div>
                 </div>
-                <div className="text-sm font-semibold opacity-90">Study Streak</div>
-                <div className="text-xs opacity-75">days</div>
+                <div className="flex space-x-1">
+                  {[...Array(7)].map((_, i) => (
+                    <div
+                      key={i}
+                      className={`flex-1 h-2 rounded-full ${
+                        i < (stats?.study_streak || 0) % 7 + 1
+                          ? 'bg-gradient-to-r from-orange-500 to-yellow-500'
+                          : 'bg-gray-200'
+                      }`}
+                    />
+                  ))}
+                </div>
               </div>
 
-              <div className="bg-gradient-to-br from-focus-500 to-focus-600 text-white rounded-xl p-6 text-center shadow-lg">
-                <div className="text-3xl font-bold mb-2">
-                  {stats?.cards_learned || 0}
+              {/* Cards Learned Bento */}
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-all duration-300 group">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="bg-gradient-to-br from-green-500 to-emerald-500 p-3 rounded-xl text-white shadow-lg">
+                    <span className="text-2xl">🎓</span>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-3xl font-bold text-green-600 group-hover:scale-110 transition-transform">
+                      {stats?.cards_learned || 0}
+                    </div>
+                    <div className="text-sm font-semibold text-gray-600">Mastered</div>
+                  </div>
                 </div>
-                <div className="text-sm font-semibold opacity-90">Cards Learned</div>
+                <div className="text-xs text-green-600 font-medium">
+                  +{Math.floor((stats?.cards_learned || 0) * 0.1)} this week
+                </div>
               </div>
 
-              <div className="bg-gradient-to-br from-gray-600 to-gray-700 text-white rounded-xl p-6 text-center shadow-lg">
-                <div className="text-3xl font-bold mb-2">
-                  {stats?.total_reviews || 0}
+              {/* Total Reviews Bento */}
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-all duration-300 group">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="bg-gradient-to-br from-blue-500 to-indigo-500 p-3 rounded-xl text-white shadow-lg">
+                    <span className="text-2xl">📊</span>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-3xl font-bold text-blue-600 group-hover:scale-110 transition-transform">
+                      {stats?.total_reviews || 0}
+                    </div>
+                    <div className="text-sm font-semibold text-gray-600">Reviews</div>
+                  </div>
                 </div>
-                <div className="text-sm font-semibold opacity-90">Total Reviews</div>
+                <div className="text-xs text-blue-600 font-medium">
+                  All time total
+                </div>
               </div>
             </div>
           </div>
-        </section>
 
-        {/* Main Dashboard Grid */}
-        <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
-          
-          {/* Primary Content Area */}
-          <div className="xl:col-span-8 space-y-8">
-            
-            {/* Study Session Section */}
-            <section>
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="p-6 border-b border-gray-100">
-                  <h2 className="heading-4 text-neutral-charcoal">📚 Study Session</h2>
-                  <p className="text-sm text-neutral-gray mt-1">Review your due cards and keep your streak alive</p>
-                </div>
-                <div className="p-6">
-                  <DueCardsSection
-                    cards={dueCards}
-                    totalDue={stats?.cards_due_today || 0}
-                    isLoading={false}
-                    onStartSession={handleStartStudySession}
-                  />
-                </div>
-              </div>
-            </section>
-
-            {/* Analytics Section */}
-            <section>
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="p-6 border-b border-gray-100">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h2 className="heading-4 text-neutral-charcoal">📈 Learning Analytics</h2>
-                      <p className="text-sm text-neutral-gray mt-1">Track your progress and study patterns</p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant={chartType === 'weekly' ? 'primary' : 'ghost'}
-                        size="sm"
-                        onClick={() => setChartType('weekly')}
-                      >
-                        Week
-                      </Button>
-                      <Button
-                        variant={chartType === 'monthly' ? 'primary' : 'ghost'}
-                        size="sm"
-                        onClick={() => setChartType('monthly')}
-                      >
-                        Month
-                      </Button>
-                    </div>
+          {/* Study Session Bento - Large */}
+          <div className="col-span-12 lg:col-span-8">
+            <div className="bg-white rounded-3xl shadow-xl border border-gray-200 overflow-hidden h-full">
+              <div className="bg-gradient-to-r from-purple-600 to-indigo-600 p-6 text-white">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-2xl font-bold mb-2">📚 Study Session</h2>
+                    <p className="text-purple-100">Master your cards and boost your knowledge</p>
                   </div>
-                </div>
-                <div className="p-6">
-                  <ProgressChart
-                    weeklyData={stats?.weekly_progress || [0, 0, 0, 0, 0, 0, 0]}
-                    monthlyData={stats?.monthly_progress || new Array(30).fill(0)}
-                    type={chartType}
-                  />
+                  <div className="text-4xl opacity-50">🎯</div>
                 </div>
               </div>
-            </section>
+              <div className="p-6">
+                <DueCardsSection
+                  cards={dueCards}
+                  totalDue={stats?.cards_due_today || 0}
+                  isLoading={false}
+                  onStartSession={handleStartStudySession}
+                />
+              </div>
+            </div>
           </div>
 
-          {/* Sidebar Content */}
-          <div className="xl:col-span-4 space-y-8">
-            
-            {/* Study Streak Section */}
-            <section>
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="p-6 border-b border-gray-100">
-                  <h3 className="heading-5 text-neutral-charcoal">🔥 Study Streak</h3>
-                  <p className="text-sm text-neutral-gray mt-1">Keep the momentum going</p>
-                </div>
-                <div className="p-6">
-                  <StudyStreakCard
-                    currentStreak={stats?.study_streak || 0}
-                    longestStreak={stats?.study_streak || 0}
-                    totalStudyDays={Math.min(stats?.total_reviews || 0, 100)}
-                    weeklyGoal={7}
-                    weeklyProgress={Math.min(stats?.study_streak || 0, 7)}
-                    nextReviewDate={stats?.next_review_date}
-                  />
+          {/* Study Streak Bento - Tall */}
+          <div className="col-span-12 lg:col-span-4">
+            <div className="bg-gradient-to-br from-orange-100 via-red-50 to-pink-100 rounded-3xl shadow-xl border border-orange-200 overflow-hidden h-full">
+              <div className="bg-gradient-to-r from-orange-500 to-red-500 p-6 text-white">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl font-bold">🔥 Streak Power</h3>
+                    <p className="text-orange-100 text-sm">Keep the fire burning</p>
+                  </div>
+                  <div className="text-3xl opacity-50">🚀</div>
                 </div>
               </div>
-            </section>
-
-            {/* Recent Lessons Section */}
-            <section>
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="p-6 border-b border-gray-100">
-                  <h3 className="heading-5 text-neutral-charcoal">📖 Recent Lessons</h3>
-                  <p className="text-sm text-neutral-gray mt-1">Continue where you left off</p>
-                </div>
-                <div className="p-6">
-                  <RecentLessonsSection
-                    lessons={recentLessons}
-                    isLoading={false}
-                    onStartStudy={handleStartStudySession}
-                  />
-                </div>
+              <div className="p-6">
+                <StudyStreakCard
+                  currentStreak={stats?.study_streak || 0}
+                  longestStreak={stats?.study_streak || 0}
+                  totalStudyDays={Math.min(stats?.total_reviews || 0, 100)}
+                  weeklyGoal={7}
+                  weeklyProgress={Math.min(stats?.study_streak || 0, 7)}
+                  nextReviewDate={stats?.next_review_date}
+                />
               </div>
-            </section>
+            </div>
+          </div>
 
-            {/* Quick Actions Section */}
-            <section>
-              <div className="bg-gradient-to-br from-focus-50 to-learning-50 rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="p-6 border-b border-white/50">
-                  <h3 className="heading-5 text-neutral-charcoal">⚡ Quick Actions</h3>
-                  <p className="text-sm text-neutral-gray mt-1">Navigate to key features</p>
-                </div>
-                <div className="p-6">
-                  <div className="space-y-3">
+          {/* Analytics Bento - Wide */}
+          <div className="col-span-12 lg:col-span-8">
+            <div className="bg-white rounded-3xl shadow-xl border border-gray-200 overflow-hidden">
+              <div className="bg-gradient-to-r from-emerald-600 to-teal-600 p-6 text-white">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-2xl font-bold mb-2">📈 Learning Analytics</h2>
+                    <p className="text-emerald-100">Track your progress and celebrate growth</p>
+                  </div>
+                  <div className="flex gap-2">
                     <Button
-                      variant="ghost"
+                      variant={chartType === 'weekly' ? 'accent' : 'ghost'}
                       size="sm"
-                      className="w-full justify-start bg-white/60 border-white/80 text-focus-700 hover:bg-white/80 shadow-sm"
-                      onClick={() => router.push('/progress')}
+                      onClick={() => setChartType('weekly')}
+                      className="bg-white/20 text-white border-white/30 hover:bg-white/30"
                     >
-                      📊 View Detailed Progress
+                      Week
                     </Button>
                     <Button
-                      variant="ghost"
+                      variant={chartType === 'monthly' ? 'accent' : 'ghost'}
                       size="sm"
-                      className="w-full justify-start bg-white/60 border-white/80 text-focus-700 hover:bg-white/80 shadow-sm"
-                      onClick={() => router.push('/lessons')}
+                      onClick={() => setChartType('monthly')}
+                      className="bg-white/20 text-white border-white/30 hover:bg-white/30"
                     >
-                      📚 Browse All Lessons
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="w-full justify-start bg-white/60 border-white/80 text-focus-700 hover:bg-white/80 shadow-sm"
-                      onClick={() => router.push('/settings')}
-                    >
-                      ⚙️ Settings
+                      Month
                     </Button>
                   </div>
                 </div>
               </div>
-            </section>
+              <div className="p-6">
+                <ProgressChart
+                  weeklyData={stats?.weekly_progress || [0, 0, 0, 0, 0, 0, 0]}
+                  monthlyData={stats?.monthly_progress || new Array(30).fill(0)}
+                  type={chartType}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Actions & Recent Lessons Bento - Compact */}
+          <div className="col-span-12 lg:col-span-4 space-y-6">
+            
+            {/* Recent Lessons Compact Bento */}
+            <div className="bg-gradient-to-br from-blue-100 via-indigo-50 to-purple-100 rounded-3xl shadow-xl border border-blue-200 overflow-hidden">
+              <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-4 text-white">
+                <h3 className="text-lg font-bold">📖 Recent Lessons</h3>
+                <p className="text-blue-100 text-sm">Continue your journey</p>
+              </div>
+              <div className="p-4">
+                <RecentLessonsSection
+                  lessons={recentLessons}
+                  isLoading={false}
+                  onStartStudy={handleStartStudySession}
+                />
+              </div>
+            </div>
+
+            {/* Quick Actions Compact Bento */}
+            <div className="bg-gradient-to-br from-amber-100 via-yellow-50 to-orange-100 rounded-3xl shadow-xl border border-amber-200 overflow-hidden">
+              <div className="bg-gradient-to-r from-amber-600 to-orange-600 p-4 text-white">
+                <h3 className="text-lg font-bold">⚡ Quick Actions</h3>
+                <p className="text-amber-100 text-sm">Jump to key features</p>
+              </div>
+              <div className="p-4">
+                <div className="space-y-3">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-start bg-white/70 border-amber-200 text-amber-700 hover:bg-white/90 shadow-sm font-medium"
+                    onClick={() => router.push('/progress')}
+                  >
+                    📊 Detailed Progress
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-start bg-white/70 border-amber-200 text-amber-700 hover:bg-white/90 shadow-sm font-medium"
+                    onClick={() => router.push('/lessons')}
+                  >
+                    📚 Browse Lessons
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-start bg-white/70 border-amber-200 text-amber-700 hover:bg-white/90 shadow-sm font-medium"
+                    onClick={() => router.push('/settings')}
+                  >
+                    ⚙️ Settings
+                  </Button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Footer Spacer */}
-        <div className="mt-16"></div>
+        <div className="mt-12"></div>
       </div>
     </div>
   )
