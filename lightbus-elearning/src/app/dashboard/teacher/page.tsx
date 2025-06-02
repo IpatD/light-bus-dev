@@ -105,108 +105,288 @@ export default function TeacherDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-white">
-      <div className="container-main py-8">
-        {/* Header */}
+    <div className="min-h-screen bg-gray-50">
+      {/* Main Dashboard Container with Bento Layout */}
+      <div className="container mx-auto px-6 py-8 max-w-7xl">
+        
+        {/* Welcome Hero Bento */}
         <div className="mb-8">
-          <h1 className="heading-2 mb-2">
-            Welcome, <span className="text-teacher-500">{user.name}</span>! 👨‍🏫
-          </h1>
-          <p className="body-medium text-neutral-gray">
-            Manage your lessons, create engaging content, and track your students' progress.
-          </p>
-        </div>
-
-        {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card variant="primary" padding="lg" className="text-center">
-            <div className="text-3xl font-bold text-teacher-500 mb-2">
-              {stats?.total_lessons || 0}
+          <div
+            className="bg-white border-4 border-black shadow-xl p-8 overflow-hidden relative"
+            style={{ backgroundColor: '#ff6b35' }}
+          >
+            <div className="relative z-10">
+              <h1 className="text-4xl font-bold mb-3 text-white">
+                Welcome, <span className="text-yellow-200">{user.name}</span>!
+                <span className="ml-2">👨‍🏫</span>
+              </h1>
+              <p className="text-orange-100 text-lg">
+                Create amazing lessons, inspire students, and track their progress!
+              </p>
             </div>
-            <div className="text-sm font-semibold text-neutral-charcoal">Active Lessons</div>
-          </Card>
-
-          <Card variant="default" padding="lg" className="text-center">
-            <div className="text-3xl font-bold text-learning-500 mb-2">
-              {stats?.total_students || 0}
-            </div>
-            <div className="text-sm font-semibold text-neutral-charcoal">Total Students</div>
-          </Card>
-
-          <Card variant="default" padding="lg" className="text-center">
-            <div className="text-3xl font-bold text-achievement-500 mb-2">
-              {stats?.total_cards_created || 0}
-            </div>
-            <div className="text-sm font-semibold text-neutral-charcoal">Cards Created</div>
-          </Card>
-
-          <Card variant="default" padding="lg" className="text-center">
-            <div className="text-3xl font-bold text-focus-500 mb-2">
-              {stats?.pending_cards || 0}
-            </div>
-            <div className="text-sm font-semibold text-neutral-charcoal">Pending Review</div>
-          </Card>
-        </div>
-
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Quick Actions - Full width on top */}
-          <div className="lg:col-span-3">
-            <TeacherQuickActions />
-          </div>
-
-          {/* Left Column - Lessons and Analytics */}
-          <div className="lg:col-span-2 space-y-8">
-            <TeacherLessonList />
-            <ClassAnalyticsSummary />
-          </div>
-
-          {/* Right Sidebar */}
-          <div className="space-y-6">
-            <RecentStudentActivity />
-
-            {/* Getting Started */}
-            <Card variant="accent" padding="lg">
-              <h3 className="heading-4 mb-4">🌟 Getting Started</h3>
-              <div className="space-y-3">
-                <div className="flex items-center space-x-3 text-sm">
-                  <div className="w-6 h-6 bg-focus-500 text-white text-xs flex items-center justify-center font-bold">1</div>
-                  <span>Create your first lesson</span>
-                </div>
-                <div className="flex items-center space-x-3 text-sm text-neutral-gray">
-                  <div className="w-6 h-6 bg-neutral-gray text-white text-xs flex items-center justify-center font-bold">2</div>
-                  <span>Add students to your lesson</span>
-                </div>
-                <div className="flex items-center space-x-3 text-sm text-neutral-gray">
-                  <div className="w-6 h-6 bg-neutral-gray text-white text-xs flex items-center justify-center font-bold">3</div>
-                  <span>Create or upload content</span>
-                </div>
-                <div className="flex items-center space-x-3 text-sm text-neutral-gray">
-                  <div className="w-6 h-6 bg-neutral-gray text-white text-xs flex items-center justify-center font-bold">4</div>
-                  <span>Monitor student progress</span>
-                </div>
-              </div>
-            </Card>
+            <div className="absolute -top-4 -right-4 text-8xl opacity-20">🎓</div>
           </div>
         </div>
 
-        {/* Help Section */}
-        <div className="mt-8">
-          <Card variant="default" padding="lg">
-            <div className="flex items-start space-x-4">
-              <div className="bg-teacher-100 text-teacher-600 p-3 text-2xl">
-                🎓
+        {/* Main Bento Grid Layout */}
+        <div className="grid grid-cols-12 gap-6">
+          
+          {/* Stats Overview Bento - Spans 12 columns */}
+          <div className="col-span-12">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {/* Active Lessons Bento */}
+              <div className="bg-white border-4 border-black shadow-lg p-6 hover:shadow-xl transition-all duration-300 group">
+                <div className="flex items-center justify-between mb-4">
+                  <div
+                    className="p-3 text-white shadow-lg border-2 border-black"
+                    style={{ backgroundColor: '#ff6b35' }}
+                  >
+                    <span className="text-2xl">📚</span>
+                  </div>
+                  <div className="text-right">
+                    <div
+                      className="text-3xl font-bold group-hover:scale-110 transition-transform"
+                      style={{ color: '#ff6b35' }}
+                    >
+                      {stats?.total_lessons || 0}
+                    </div>
+                    <div className="text-sm font-semibold text-gray-600">Active Lessons</div>
+                  </div>
+                </div>
+                <div className="w-full bg-orange-100 h-3 border-2 border-black">
+                  <div
+                    className="h-full transition-all duration-500 border-r-2 border-black"
+                    style={{
+                      backgroundColor: '#ff6b35',
+                      width: `${Math.min((stats?.total_lessons || 0) / 10 * 100, 100)}%`
+                    }}
+                  ></div>
+                </div>
               </div>
-              <div>
-                <h3 className="heading-4 mb-2">Teaching Tip</h3>
-                <p className="text-neutral-gray">
-                  The most effective flashcards focus on one concept at a time and use clear, 
-                  concise language. Consider adding images or examples to make complex topics more memorable.
-                </p>
+
+              {/* Total Students Bento */}
+              <div className="bg-white border-4 border-black shadow-lg p-6 hover:shadow-xl transition-all duration-300 group">
+                <div className="flex items-center justify-between mb-4">
+                  <div
+                    className="p-3 text-white shadow-lg border-2 border-black"
+                    style={{ backgroundColor: '#ff6b35' }}
+                  >
+                    <span className="text-2xl">👥</span>
+                  </div>
+                  <div className="text-right">
+                    <div
+                      className="text-3xl font-bold group-hover:scale-110 transition-transform"
+                      style={{ color: '#ff6b35' }}
+                    >
+                      {stats?.total_students || 0}
+                    </div>
+                    <div className="text-sm font-semibold text-gray-600">Total Students</div>
+                  </div>
+                </div>
+                <div className="text-xs font-medium" style={{ color: '#ff6b35' }}>
+                  +{Math.floor((stats?.total_students || 0) * 0.1)} this month
+                </div>
+              </div>
+
+              {/* Cards Created Bento */}
+              <div className="bg-white border-4 border-black shadow-lg p-6 hover:shadow-xl transition-all duration-300 group">
+                <div className="flex items-center justify-between mb-4">
+                  <div
+                    className="p-3 text-white shadow-lg border-2 border-black"
+                    style={{ backgroundColor: '#ff6b35' }}
+                  >
+                    <span className="text-2xl">🃏</span>
+                  </div>
+                  <div className="text-right">
+                    <div
+                      className="text-3xl font-bold group-hover:scale-110 transition-transform"
+                      style={{ color: '#ff6b35' }}
+                    >
+                      {stats?.total_cards_created || 0}
+                    </div>
+                    <div className="text-sm font-semibold text-gray-600">Cards Created</div>
+                  </div>
+                </div>
+                <div className="text-xs font-medium" style={{ color: '#ff6b35' }}>
+                  All time total
+                </div>
+              </div>
+
+              {/* Pending Review Bento */}
+              <div className="bg-white border-4 border-black shadow-lg p-6 hover:shadow-xl transition-all duration-300 group">
+                <div className="flex items-center justify-between mb-4">
+                  <div
+                    className="p-3 text-white shadow-lg border-2 border-black"
+                    style={{ backgroundColor: '#ff6b35' }}
+                  >
+                    <span className="text-2xl">⏳</span>
+                  </div>
+                  <div className="text-right">
+                    <div
+                      className="text-3xl font-bold group-hover:scale-110 transition-transform"
+                      style={{ color: '#ff6b35' }}
+                    >
+                      {stats?.pending_cards || 0}
+                    </div>
+                    <div className="text-sm font-semibold text-gray-600">Pending Review</div>
+                  </div>
+                </div>
+                <div className="text-xs font-medium" style={{ color: '#ff6b35' }}>
+                  Needs attention
+                </div>
               </div>
             </div>
-          </Card>
+          </div>
+
+          {/* Quick Actions Bento - Large */}
+          <div className="col-span-12">
+            <div className="bg-white border-4 border-black shadow-xl overflow-hidden">
+              <div
+                className="p-6 text-white border-b-4 border-black"
+                style={{ backgroundColor: '#ff6b35' }}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-2xl font-bold mb-2">🚀 Quick Actions</h2>
+                    <p className="text-orange-100">Jump-start your teaching workflow</p>
+                  </div>
+                  <div className="text-4xl opacity-50">⚡</div>
+                </div>
+              </div>
+              <div className="p-6">
+                <TeacherQuickActions />
+              </div>
+            </div>
+          </div>
+
+          {/* Teacher Lessons Bento - Large */}
+          <div className="col-span-12 lg:col-span-8">
+            <div className="bg-white border-4 border-black shadow-xl overflow-hidden h-full">
+              <div
+                className="p-6 text-white border-b-4 border-black"
+                style={{ backgroundColor: '#ff6b35' }}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-2xl font-bold mb-2">📚 My Lessons</h2>
+                    <p className="text-orange-100">Manage and organize your teaching content</p>
+                  </div>
+                  <div className="text-4xl opacity-50">📖</div>
+                </div>
+              </div>
+              <div className="p-6">
+                <TeacherLessonList />
+              </div>
+            </div>
+          </div>
+
+          {/* Getting Started & Student Activity Bento - Compact */}
+          <div className="col-span-12 lg:col-span-4 space-y-6">
+            
+            {/* Recent Student Activity Compact Bento */}
+            <div className="bg-orange-50 border-4 border-black shadow-xl overflow-hidden">
+              <div
+                className="p-4 text-white border-b-4 border-black"
+                style={{ backgroundColor: '#ff6b35' }}
+              >
+                <h3 className="text-lg font-bold">👥 Student Activity</h3>
+                <p className="text-orange-100 text-sm">Latest student progress</p>
+              </div>
+              <div className="p-4">
+                <RecentStudentActivity />
+              </div>
+            </div>
+
+            {/* Getting Started Compact Bento */}
+            <div className="bg-orange-50 border-4 border-black shadow-xl overflow-hidden">
+              <div
+                className="p-4 text-white border-b-4 border-black"
+                style={{ backgroundColor: '#ff6b35' }}
+              >
+                <h3 className="text-lg font-bold">🌟 Getting Started</h3>
+                <p className="text-orange-100 text-sm">Your teaching roadmap</p>
+              </div>
+              <div className="p-4">
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-3 text-sm">
+                    <div
+                      className="w-6 h-6 text-white text-xs flex items-center justify-center font-bold border-2 border-black"
+                      style={{ backgroundColor: '#ff6b35' }}
+                    >
+                      1
+                    </div>
+                    <span>Create your first lesson</span>
+                  </div>
+                  <div className="flex items-center space-x-3 text-sm text-neutral-gray">
+                    <div className="w-6 h-6 bg-neutral-gray text-white text-xs flex items-center justify-center font-bold border-2 border-black">2</div>
+                    <span>Add students to your lesson</span>
+                  </div>
+                  <div className="flex items-center space-x-3 text-sm text-neutral-gray">
+                    <div className="w-6 h-6 bg-neutral-gray text-white text-xs flex items-center justify-center font-bold border-2 border-black">3</div>
+                    <span>Create or upload content</span>
+                  </div>
+                  <div className="flex items-center space-x-3 text-sm text-neutral-gray">
+                    <div className="w-6 h-6 bg-neutral-gray text-white text-xs flex items-center justify-center font-bold border-2 border-black">4</div>
+                    <span>Monitor student progress</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Analytics Bento - Wide */}
+          <div className="col-span-12 lg:col-span-8">
+            <div className="bg-white border-4 border-black shadow-xl overflow-hidden">
+              <div
+                className="p-6 text-white border-b-4 border-black"
+                style={{ backgroundColor: '#ff6b35' }}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-2xl font-bold mb-2">📊 Class Analytics</h2>
+                    <p className="text-orange-100">Track student performance and engagement</p>
+                  </div>
+                  <div className="text-4xl opacity-50">📈</div>
+                </div>
+              </div>
+              <div className="p-6">
+                <ClassAnalyticsSummary />
+              </div>
+            </div>
+          </div>
+
+          {/* Teaching Tip Bento - Compact */}
+          <div className="col-span-12 lg:col-span-4">
+            <div className="bg-orange-50 border-4 border-black shadow-xl overflow-hidden h-full">
+              <div
+                className="p-4 text-white border-b-4 border-black"
+                style={{ backgroundColor: '#ff6b35' }}
+              >
+                <h3 className="text-lg font-bold">💡 Teaching Tip</h3>
+                <p className="text-orange-100 text-sm">Expert advice</p>
+              </div>
+              <div className="p-4">
+                <div className="flex items-start space-x-4">
+                  <div
+                    className="p-3 text-2xl border-2 border-black"
+                    style={{ backgroundColor: '#ff6b35', color: 'white' }}
+                  >
+                    🎓
+                  </div>
+                  <div>
+                    <h4 className="font-semibold mb-2">Effective Flashcards</h4>
+                    <p className="text-sm text-neutral-gray">
+                      Focus on one concept at a time and use clear, concise language. Consider adding images or examples to make complex topics more memorable.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
+
+        {/* Footer Spacer */}
+        <div className="mt-12"></div>
       </div>
     </div>
   )

@@ -254,20 +254,22 @@ export default function StudentDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+    <div className="min-h-screen bg-gray-50">
       {/* Main Dashboard Container with Bento Layout */}
       <div className="container mx-auto px-6 py-8 max-w-7xl">
         
         {/* Welcome Hero Bento */}
         <div className="mb-8">
-          <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-blue-600 rounded-3xl shadow-xl p-8 text-white overflow-hidden relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-black/20 to-transparent"></div>
+          <div
+            className="bg-white border-4 border-black shadow-xl p-8 overflow-hidden relative"
+            style={{ backgroundColor: '#ff6b35' }}
+          >
             <div className="relative z-10">
-              <h1 className="text-4xl font-bold mb-3">
-                Welcome back, <span className="text-yellow-300">{user.name}</span>!
+              <h1 className="text-4xl font-bold mb-3 text-white">
+                Welcome back, <span className="text-yellow-200">{user.name}</span>!
                 <span className="ml-2">🚀</span>
               </h1>
-              <p className="text-blue-100 text-lg">
+              <p className="text-orange-100 text-lg">
                 Ready to supercharge your learning? Let's dive into today's adventure!
               </p>
             </div>
@@ -282,34 +284,49 @@ export default function StudentDashboard() {
           <div className="col-span-12">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {/* Cards Due Bento */}
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-all duration-300 group">
+              <div className="bg-white border-4 border-black shadow-lg p-6 hover:shadow-xl transition-all duration-300 group">
                 <div className="flex items-center justify-between mb-4">
-                  <div className="bg-gradient-to-br from-red-500 to-orange-500 p-3 rounded-xl text-white shadow-lg">
+                  <div
+                    className="p-3 text-white shadow-lg border-2 border-black"
+                    style={{ backgroundColor: '#ff6b35' }}
+                  >
                     <span className="text-2xl">🎯</span>
                   </div>
                   <div className="text-right">
-                    <div className="text-3xl font-bold text-red-600 group-hover:scale-110 transition-transform">
+                    <div
+                      className="text-3xl font-bold group-hover:scale-110 transition-transform"
+                      style={{ color: '#ff6b35' }}
+                    >
                       {stats?.cards_due_today || 0}
                     </div>
                     <div className="text-sm font-semibold text-gray-600">Due Today</div>
                   </div>
                 </div>
-                <div className="w-full bg-red-100 rounded-full h-2">
+                <div className="w-full bg-orange-100 h-3 border-2 border-black">
                   <div
-                    className="bg-gradient-to-r from-red-500 to-orange-500 h-2 rounded-full transition-all duration-500"
-                    style={{ width: `${Math.min((stats?.cards_due_today || 0) / 20 * 100, 100)}%` }}
+                    className="h-full transition-all duration-500 border-r-2 border-black"
+                    style={{
+                      backgroundColor: '#ff6b35',
+                      width: `${Math.min((stats?.cards_due_today || 0) / 20 * 100, 100)}%`
+                    }}
                   ></div>
                 </div>
               </div>
 
               {/* Study Streak Bento */}
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-all duration-300 group">
+              <div className="bg-white border-4 border-black shadow-lg p-6 hover:shadow-xl transition-all duration-300 group">
                 <div className="flex items-center justify-between mb-4">
-                  <div className="bg-gradient-to-br from-orange-500 to-yellow-500 p-3 rounded-xl text-white shadow-lg">
+                  <div
+                    className="p-3 text-white shadow-lg border-2 border-black"
+                    style={{ backgroundColor: '#ff6b35' }}
+                  >
                     <span className="text-2xl">🔥</span>
                   </div>
                   <div className="text-right">
-                    <div className="text-3xl font-bold text-orange-600 group-hover:scale-110 transition-transform">
+                    <div
+                      className="text-3xl font-bold group-hover:scale-110 transition-transform"
+                      style={{ color: '#ff6b35' }}
+                    >
                       {stats?.study_streak || 0}
                     </div>
                     <div className="text-sm font-semibold text-gray-600">Day Streak</div>
@@ -319,48 +336,63 @@ export default function StudentDashboard() {
                   {[...Array(7)].map((_, i) => (
                     <div
                       key={i}
-                      className={`flex-1 h-2 rounded-full ${
+                      className={`flex-1 h-3 border border-black ${
                         i < (stats?.study_streak || 0) % 7 + 1
-                          ? 'bg-gradient-to-r from-orange-500 to-yellow-500'
+                          ? 'bg-orange-500'
                           : 'bg-gray-200'
                       }`}
+                      style={{
+                        backgroundColor: i < (stats?.study_streak || 0) % 7 + 1 ? '#ff6b35' : '#e5e7eb'
+                      }}
                     />
                   ))}
                 </div>
               </div>
 
               {/* Cards Learned Bento */}
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-all duration-300 group">
+              <div className="bg-white border-4 border-black shadow-lg p-6 hover:shadow-xl transition-all duration-300 group">
                 <div className="flex items-center justify-between mb-4">
-                  <div className="bg-gradient-to-br from-green-500 to-emerald-500 p-3 rounded-xl text-white shadow-lg">
+                  <div
+                    className="p-3 text-white shadow-lg border-2 border-black"
+                    style={{ backgroundColor: '#ff6b35' }}
+                  >
                     <span className="text-2xl">🎓</span>
                   </div>
                   <div className="text-right">
-                    <div className="text-3xl font-bold text-green-600 group-hover:scale-110 transition-transform">
+                    <div
+                      className="text-3xl font-bold group-hover:scale-110 transition-transform"
+                      style={{ color: '#ff6b35' }}
+                    >
                       {stats?.cards_learned || 0}
                     </div>
                     <div className="text-sm font-semibold text-gray-600">Mastered</div>
                   </div>
                 </div>
-                <div className="text-xs text-green-600 font-medium">
+                <div className="text-xs font-medium" style={{ color: '#ff6b35' }}>
                   +{Math.floor((stats?.cards_learned || 0) * 0.1)} this week
                 </div>
               </div>
 
               {/* Total Reviews Bento */}
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-all duration-300 group">
+              <div className="bg-white border-4 border-black shadow-lg p-6 hover:shadow-xl transition-all duration-300 group">
                 <div className="flex items-center justify-between mb-4">
-                  <div className="bg-gradient-to-br from-blue-500 to-indigo-500 p-3 rounded-xl text-white shadow-lg">
+                  <div
+                    className="p-3 text-white shadow-lg border-2 border-black"
+                    style={{ backgroundColor: '#ff6b35' }}
+                  >
                     <span className="text-2xl">📊</span>
                   </div>
                   <div className="text-right">
-                    <div className="text-3xl font-bold text-blue-600 group-hover:scale-110 transition-transform">
+                    <div
+                      className="text-3xl font-bold group-hover:scale-110 transition-transform"
+                      style={{ color: '#ff6b35' }}
+                    >
                       {stats?.total_reviews || 0}
                     </div>
                     <div className="text-sm font-semibold text-gray-600">Reviews</div>
                   </div>
                 </div>
-                <div className="text-xs text-blue-600 font-medium">
+                <div className="text-xs font-medium" style={{ color: '#ff6b35' }}>
                   All time total
                 </div>
               </div>
@@ -369,12 +401,15 @@ export default function StudentDashboard() {
 
           {/* Study Session Bento - Large */}
           <div className="col-span-12 lg:col-span-8">
-            <div className="bg-white rounded-3xl shadow-xl border border-gray-200 overflow-hidden h-full">
-              <div className="bg-gradient-to-r from-purple-600 to-indigo-600 p-6 text-white">
+            <div className="bg-white border-4 border-black shadow-xl overflow-hidden h-full">
+              <div
+                className="p-6 text-white border-b-4 border-black"
+                style={{ backgroundColor: '#ff6b35' }}
+              >
                 <div className="flex items-center justify-between">
                   <div>
                     <h2 className="text-2xl font-bold mb-2">📚 Study Session</h2>
-                    <p className="text-purple-100">Master your cards and boost your knowledge</p>
+                    <p className="text-orange-100">Master your cards and boost your knowledge</p>
                   </div>
                   <div className="text-4xl opacity-50">🎯</div>
                 </div>
@@ -392,8 +427,11 @@ export default function StudentDashboard() {
 
           {/* Study Streak Bento - Tall */}
           <div className="col-span-12 lg:col-span-4">
-            <div className="bg-gradient-to-br from-orange-100 via-red-50 to-pink-100 rounded-3xl shadow-xl border border-orange-200 overflow-hidden h-full">
-              <div className="bg-gradient-to-r from-orange-500 to-red-500 p-6 text-white">
+            <div className="bg-orange-50 border-4 border-black shadow-xl overflow-hidden h-full">
+              <div
+                className="p-6 text-white border-b-4 border-black"
+                style={{ backgroundColor: '#ff6b35' }}
+              >
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-xl font-bold">🔥 Streak Power</h3>
@@ -417,12 +455,15 @@ export default function StudentDashboard() {
 
           {/* Analytics Bento - Wide */}
           <div className="col-span-12 lg:col-span-8">
-            <div className="bg-white rounded-3xl shadow-xl border border-gray-200 overflow-hidden">
-              <div className="bg-gradient-to-r from-emerald-600 to-teal-600 p-6 text-white">
+            <div className="bg-white border-4 border-black shadow-xl overflow-hidden">
+              <div
+                className="p-6 text-white border-b-4 border-black"
+                style={{ backgroundColor: '#ff6b35' }}
+              >
                 <div className="flex items-center justify-between">
                   <div>
                     <h2 className="text-2xl font-bold mb-2">📈 Learning Analytics</h2>
-                    <p className="text-emerald-100">Track your progress and celebrate growth</p>
+                    <p className="text-orange-100">Track your progress and celebrate growth</p>
                   </div>
                   <div className="flex gap-2">
                     <Button
@@ -458,10 +499,13 @@ export default function StudentDashboard() {
           <div className="col-span-12 lg:col-span-4 space-y-6">
             
             {/* Recent Lessons Compact Bento */}
-            <div className="bg-gradient-to-br from-blue-100 via-indigo-50 to-purple-100 rounded-3xl shadow-xl border border-blue-200 overflow-hidden">
-              <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-4 text-white">
+            <div className="bg-orange-50 border-4 border-black shadow-xl overflow-hidden">
+              <div
+                className="p-4 text-white border-b-4 border-black"
+                style={{ backgroundColor: '#ff6b35' }}
+              >
                 <h3 className="text-lg font-bold">📖 Recent Lessons</h3>
-                <p className="text-blue-100 text-sm">Continue your journey</p>
+                <p className="text-orange-100 text-sm">Continue your journey</p>
               </div>
               <div className="p-4">
                 <RecentLessonsSection
@@ -473,17 +517,20 @@ export default function StudentDashboard() {
             </div>
 
             {/* Quick Actions Compact Bento */}
-            <div className="bg-gradient-to-br from-amber-100 via-yellow-50 to-orange-100 rounded-3xl shadow-xl border border-amber-200 overflow-hidden">
-              <div className="bg-gradient-to-r from-amber-600 to-orange-600 p-4 text-white">
+            <div className="bg-orange-50 border-4 border-black shadow-xl overflow-hidden">
+              <div
+                className="p-4 text-white border-b-4 border-black"
+                style={{ backgroundColor: '#ff6b35' }}
+              >
                 <h3 className="text-lg font-bold">⚡ Quick Actions</h3>
-                <p className="text-amber-100 text-sm">Jump to key features</p>
+                <p className="text-orange-100 text-sm">Jump to key features</p>
               </div>
               <div className="p-4">
                 <div className="space-y-3">
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="w-full justify-start bg-white/70 border-amber-200 text-amber-700 hover:bg-white/90 shadow-sm font-medium"
+                    className="w-full justify-start bg-white border-2 border-black text-gray-800 hover:bg-orange-100 shadow-sm font-medium"
                     onClick={() => router.push('/progress')}
                   >
                     📊 Detailed Progress
@@ -491,7 +538,7 @@ export default function StudentDashboard() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="w-full justify-start bg-white/70 border-amber-200 text-amber-700 hover:bg-white/90 shadow-sm font-medium"
+                    className="w-full justify-start bg-white border-2 border-black text-gray-800 hover:bg-orange-100 shadow-sm font-medium"
                     onClick={() => router.push('/lessons')}
                   >
                     📚 Browse Lessons
@@ -499,7 +546,7 @@ export default function StudentDashboard() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="w-full justify-start bg-white/70 border-amber-200 text-amber-700 hover:bg-white/90 shadow-sm font-medium"
+                    className="w-full justify-start bg-white border-2 border-black text-gray-800 hover:bg-orange-100 shadow-sm font-medium"
                     onClick={() => router.push('/settings')}
                   >
                     ⚙️ Settings
