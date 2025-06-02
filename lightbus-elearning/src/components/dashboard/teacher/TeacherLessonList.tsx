@@ -121,52 +121,63 @@ export default function TeacherLessonList({ className = '' }: TeacherLessonListP
 
   if (isLoading) {
     return (
-      <Card variant="default" padding="lg" className={className}>
+      <div className={className}>
         <div className="animate-pulse">
-          <div className="h-6 bg-neutral-gray bg-opacity-20 w-1/3 mb-4"></div>
+          <div className="h-6 bg-gray-200 w-1/3 mb-4"></div>
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-20 bg-neutral-gray bg-opacity-20"></div>
+              <div key={i} className="h-20 bg-gray-200"></div>
             ))}
           </div>
         </div>
-      </Card>
+      </div>
     )
   }
 
   if (error) {
     return (
-      <Card variant="default" padding="lg" className={className}>
-        <h3 className="heading-4 mb-4">📖 My Lessons</h3>
+      <div className={className}>
         <div className="text-center py-8">
           <div className="text-4xl mb-2">⚠️</div>
           <p className="text-red-600 mb-4">{error}</p>
-          <Button variant="secondary" size="sm" onClick={fetchLessons}>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={fetchLessons}
+            className="bg-white border-2 border-black text-gray-800 hover:bg-orange-100"
+          >
             Try Again
           </Button>
         </div>
-      </Card>
+      </div>
     )
   }
 
   return (
-    <Card variant="default" padding="lg" className={className}>
+    <div className={className}>
       <div className="flex items-center justify-between mb-6">
-        <h3 className="heading-4">📖 My Lessons</h3>
         <Link href="/lessons/create">
-          <Button variant="primary" size="sm">
+          <Button
+            variant="primary"
+            size="sm"
+            className="bg-white border-2 border-black text-gray-800 hover:bg-orange-100"
+          >
             + New Lesson
           </Button>
         </Link>
       </div>
 
       {lessons.length === 0 ? (
-        <div className="text-center py-8 text-neutral-gray">
+        <div className="text-center py-8 text-gray-600">
           <div className="text-4xl mb-2">📚</div>
           <p className="text-sm mb-2">No lessons created yet</p>
           <p className="text-xs mb-4">Create your first lesson to get started</p>
           <Link href="/lessons/create">
-            <Button variant="ghost" size="sm" className="border-teacher-300 text-teacher-600 hover:bg-teacher-50">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="bg-white border-2 border-black text-gray-800 hover:bg-orange-100"
+            >
               Create First Lesson
             </Button>
           </Link>
@@ -176,24 +187,27 @@ export default function TeacherLessonList({ className = '' }: TeacherLessonListP
           {lessons.map((lesson) => (
             <div
               key={lesson.id}
-              className="border border-neutral-gray border-opacity-20 p-4 hover:border-teacher-300 transition-colors cursor-pointer"
+              className="border-2 border-black p-4 bg-white hover:bg-orange-50 transition-colors cursor-pointer"
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center space-x-2 mb-2">
-                    <h4 className="font-semibold text-neutral-charcoal">{lesson.name}</h4>
-                    <span className={`text-xs px-2 py-1 bg-${getStatusColor(lesson)} bg-opacity-10 text-${getStatusColor(lesson)}`}>
+                    <h4 className="font-semibold text-gray-800">{lesson.name}</h4>
+                    <span
+                      className="text-xs px-2 py-1 bg-orange-100 border border-black text-gray-800"
+                      style={{ color: '#ff6b35' }}
+                    >
                       {getStatusText(lesson)}
                     </span>
                   </div>
                   
                   {lesson.description && (
-                    <p className="text-sm text-neutral-gray mb-2 line-clamp-2">
+                    <p className="text-sm text-gray-600 mb-2 line-clamp-2">
                       {lesson.description}
                     </p>
                   )}
                   
-                  <div className="flex items-center space-x-4 text-xs text-neutral-gray">
+                  <div className="flex items-center space-x-4 text-xs text-gray-600">
                     <span>📅 {formatDate(lesson.scheduled_at)}</span>
                     <span>👥 {lesson.student_count} students</span>
                     <span>📝 {lesson.card_count} cards</span>
@@ -205,13 +219,21 @@ export default function TeacherLessonList({ className = '' }: TeacherLessonListP
                 
                 <div className="flex items-center space-x-2 ml-4">
                   <Link href={`/lessons/${lesson.id}/teacher`}>
-                    <Button variant="ghost" size="sm" className="text-teacher-600 hover:bg-teacher-50">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="bg-white border-2 border-black text-gray-800 hover:bg-orange-100"
+                    >
                       Manage
                     </Button>
                   </Link>
                   
                   <Link href={`/lessons/${lesson.id}/teacher/analytics`}>
-                    <Button variant="ghost" size="sm" className="text-learning-600 hover:bg-learning-50">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="bg-white border-2 border-black text-gray-800 hover:bg-orange-100"
+                    >
                       Analytics
                     </Button>
                   </Link>
@@ -220,7 +242,7 @@ export default function TeacherLessonList({ className = '' }: TeacherLessonListP
                     variant="ghost"
                     size="sm"
                     onClick={() => handleDeleteClick(lesson)}
-                    className="text-red-600 hover:bg-red-50"
+                    className="bg-white border-2 border-black text-red-600 hover:bg-red-50"
                   >
                     🗑️
                   </Button>
@@ -232,7 +254,11 @@ export default function TeacherLessonList({ className = '' }: TeacherLessonListP
           {lessons.length > 3 && (
             <div className="text-center pt-4">
               <Link href="/dashboard/teacher/lessons">
-                <Button variant="ghost" size="sm" className="text-teacher-600 hover:bg-teacher-50">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="bg-white border-2 border-black text-gray-800 hover:bg-orange-100"
+                >
                   View All Lessons ({lessons.length})
                 </Button>
               </Link>
@@ -257,6 +283,6 @@ export default function TeacherLessonList({ className = '' }: TeacherLessonListP
         isLoading={isDeleting}
         variant="danger"
       />
-    </Card>
+    </div>
   )
 }

@@ -163,51 +163,58 @@ export default function RecentStudentActivity({ className = '' }: RecentStudentA
 
   if (isLoading) {
     return (
-      <Card variant="default" padding="lg" className={className}>
+      <div className={className}>
         <div className="animate-pulse">
-          <div className="h-6 bg-neutral-gray bg-opacity-20 w-1/3 mb-4"></div>
+          <div className="h-6 bg-gray-200 w-1/3 mb-4"></div>
           <div className="space-y-3">
             {[1, 2, 3, 4, 5].map((i) => (
               <div key={i} className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-neutral-gray bg-opacity-20"></div>
+                <div className="w-8 h-8 bg-gray-200"></div>
                 <div className="flex-1">
-                  <div className="h-4 bg-neutral-gray bg-opacity-20 w-3/4 mb-1"></div>
-                  <div className="h-3 bg-neutral-gray bg-opacity-20 w-1/2"></div>
+                  <div className="h-4 bg-gray-200 w-3/4 mb-1"></div>
+                  <div className="h-3 bg-gray-200 w-1/2"></div>
                 </div>
               </div>
             ))}
           </div>
         </div>
-      </Card>
+      </div>
     )
   }
 
   if (error) {
     return (
-      <Card variant="default" padding="lg" className={className}>
-        <h3 className="heading-4 mb-4">🔔 Recent Activity</h3>
+      <div className={className}>
         <div className="text-center py-8">
           <div className="text-4xl mb-2">⚠️</div>
           <p className="text-red-600 mb-4">{error}</p>
-          <Button variant="secondary" size="sm" onClick={fetchRecentActivity}>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={fetchRecentActivity}
+            className="bg-white border-2 border-black text-gray-800 hover:bg-orange-100"
+          >
             Try Again
           </Button>
         </div>
-      </Card>
+      </div>
     )
   }
 
   return (
-    <Card variant="default" padding="lg" className={className}>
+    <div className={className}>
       <div className="flex items-center justify-between mb-6">
-        <h3 className="heading-4">🔔 Recent Activity</h3>
-        <Button variant="ghost" size="sm" className="text-neutral-gray hover:bg-neutral-gray hover:bg-opacity-10">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="bg-white border-2 border-black text-gray-800 hover:bg-orange-100"
+        >
           View All
         </Button>
       </div>
 
       {activities.length === 0 ? (
-        <div className="text-center py-8 text-neutral-gray">
+        <div className="text-center py-8 text-gray-600">
           <div className="text-4xl mb-2">🎯</div>
           <p className="text-sm mb-2">No recent activity</p>
           <p className="text-xs">Activity will appear here as students engage with your content</p>
@@ -215,55 +222,56 @@ export default function RecentStudentActivity({ className = '' }: RecentStudentA
       ) : (
         <div className="space-y-4">
           {activities.map((activity) => {
-            const color = getActivityColor(activity.type, activity.metadata)
-            
             return (
               <div
                 key={activity.id}
-                className="flex items-start space-x-3 p-3 hover:bg-neutral-gray hover:bg-opacity-5 transition-colors"
+                className="flex items-start space-x-3 p-3 bg-white border-2 border-black hover:bg-orange-50 transition-colors"
               >
-                <div className={`text-lg flex-shrink-0 w-8 h-8 flex items-center justify-center bg-${color}-50 text-${color}-600`}>
+                <div
+                  className="text-lg flex-shrink-0 w-8 h-8 flex items-center justify-center border border-black text-white"
+                  style={{ backgroundColor: '#ff6b35' }}
+                >
                   {getActivityIcon(activity.type)}
                 </div>
                 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-neutral-charcoal">
+                      <p className="text-sm font-medium text-gray-800">
                         <span className="font-semibold">{activity.student_name}</span>
                         {' '}
-                        <span className="text-neutral-gray">in</span>
+                        <span className="text-gray-600">in</span>
                         {' '}
                         <span className="font-medium">{activity.lesson_name}</span>
                       </p>
                       
-                      <p className="text-sm text-neutral-gray mt-1">
+                      <p className="text-sm text-gray-600 mt-1">
                         {activity.description}
                         {activity.metadata?.quality_rating && (
-                          <span className={`ml-2 text-${getActivityColor(activity.type, activity.metadata)}-600 font-medium`}>
+                          <span className="ml-2 font-medium" style={{ color: '#ff6b35' }}>
                             ({getQualityText(activity.metadata.quality_rating)})
                           </span>
                         )}
                         {activity.metadata?.streak_days && (
-                          <span className="ml-2 text-achievement-600 font-medium">
+                          <span className="ml-2 font-medium" style={{ color: '#ff6b35' }}>
                             🔥 {activity.metadata.streak_days} days
                           </span>
                         )}
                         {activity.metadata?.completion_percentage && (
-                          <span className="ml-2 text-learning-600 font-medium">
+                          <span className="ml-2 font-medium" style={{ color: '#ff6b35' }}>
                             {activity.metadata.completion_percentage}%
                           </span>
                         )}
                       </p>
                       
                       {activity.metadata?.card_content && (
-                        <p className="text-xs text-neutral-gray mt-1 italic truncate">
+                        <p className="text-xs text-gray-600 mt-1 italic truncate">
                           "{activity.metadata.card_content}"
                         </p>
                       )}
                     </div>
                     
-                    <div className="text-xs text-neutral-gray flex-shrink-0 ml-2">
+                    <div className="text-xs text-gray-600 flex-shrink-0 ml-2">
                       {formatTimeAgo(activity.timestamp)}
                     </div>
                   </div>
@@ -275,19 +283,19 @@ export default function RecentStudentActivity({ className = '' }: RecentStudentA
       )}
 
       {/* Activity Summary */}
-      <div className="mt-6 p-4 bg-neutral-gray bg-opacity-5">
+      <div className="mt-6 p-4 bg-orange-50 border-2 border-black">
         <div className="flex items-center justify-between text-sm">
-          <span className="text-neutral-gray">Last 24 hours</span>
+          <span className="text-gray-600">Last 24 hours</span>
           <div className="flex items-center space-x-4">
-            <span className="text-achievement-600">
+            <span style={{ color: '#ff6b35' }}>
               🎯 {activities.filter(a => a.type === 'review' && a.metadata?.quality_rating && a.metadata.quality_rating >= 4).length} excellent reviews
             </span>
-            <span className="text-teacher-600">
+            <span style={{ color: '#ff6b35' }}>
               👥 {activities.filter(a => a.type === 'enrollment').length} new enrollments
             </span>
           </div>
         </div>
       </div>
-    </Card>
+    </div>
   )
 }

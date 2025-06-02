@@ -85,38 +85,30 @@ const quickActions: QuickAction[] = [
 
 export default function TeacherQuickActions({ className = '' }: TeacherQuickActionsProps) {
   return (
-    <Card variant="default" padding="lg" className={className}>
-      <h2 className="heading-3 mb-6">🚀 Quick Actions</h2>
-      
+    <div className={className}>
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {quickActions.map((action) => (
           <div
             key={action.id}
-            className={`bg-${action.color}-50 border-2 border-${action.color}-200 p-6 text-center hover:border-${action.color}-300 transition-colors cursor-pointer group`}
+            className="bg-white border-2 border-black p-6 text-center hover:shadow-lg transition-all cursor-pointer group"
           >
             <div className="text-4xl mb-4 group-hover:scale-110 transition-transform">
               {action.icon}
             </div>
             
-            <h3 className={`heading-4 mb-2 text-${action.color}-600`}>
+            <h3 className="text-lg font-bold mb-2 text-gray-800">
               {action.title}
             </h3>
             
-            <p className="text-neutral-gray text-sm mb-4 line-clamp-2">
+            <p className="text-gray-600 text-sm mb-4 line-clamp-2">
               {action.description}
             </p>
             
             <Link href={action.href}>
-              <Button 
-                variant={action.buttonVariant} 
-                size="md"
-                className={
-                  action.buttonVariant === 'secondary' && action.color === 'teacher'
-                    ? 'bg-teacher-500 text-white hover:bg-teacher-600'
-                    : action.buttonVariant === 'ghost'
-                    ? `border-${action.color}-300 text-${action.color}-600 hover:bg-${action.color}-50`
-                    : ''
-                }
+              <Button
+                variant="primary"
+                size="sm"
+                className="bg-white border-2 border-black text-gray-800 hover:bg-orange-100"
               >
                 {action.buttonText}
               </Button>
@@ -126,20 +118,26 @@ export default function TeacherQuickActions({ className = '' }: TeacherQuickActi
       </div>
 
       {/* Featured Action */}
-      <div className="mt-8 p-6 bg-gradient-to-r from-teacher-500 to-learning-500 text-white">
+      <div
+        className="mt-8 p-6 text-white border-2 border-black"
+        style={{ backgroundColor: '#ff6b35' }}
+      >
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-xl font-bold mb-2">🎯 Start Your First Lesson</h3>
-            <p className="text-teacher-100 mb-4">
+            <p className="text-orange-100 mb-4">
               Create a lesson, add students, and upload your first recording to get started with AI-powered flashcard generation.
             </p>
             <div className="flex items-center space-x-4">
               <Link href="/lessons/create">
-                <Button variant="secondary" className="bg-white text-teacher-600 hover:bg-teacher-50">
+                <Button
+                  variant="secondary"
+                  className="bg-white text-gray-800 hover:bg-orange-100 border-2 border-black"
+                >
                   Create Lesson
                 </Button>
               </Link>
-              <Link href="/help/getting-started" className="text-teacher-100 hover:text-white text-sm underline">
+              <Link href="/help/getting-started" className="text-orange-100 hover:text-white text-sm underline">
                 View Tutorial
               </Link>
             </div>
@@ -152,47 +150,70 @@ export default function TeacherQuickActions({ className = '' }: TeacherQuickActi
 
       {/* Quick Stats */}
       <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="text-center p-4 bg-neutral-gray bg-opacity-5">
-          <div className="text-lg font-bold text-teacher-500">0</div>
-          <div className="text-xs text-neutral-gray">Lessons Created</div>
+        <div className="text-center p-4 bg-orange-50 border-2 border-black">
+          <div
+            className="text-lg font-bold"
+            style={{ color: '#ff6b35' }}
+          >
+            0
+          </div>
+          <div className="text-xs text-gray-600">Lessons Created</div>
         </div>
         
-        <div className="text-center p-4 bg-neutral-gray bg-opacity-5">
-          <div className="text-lg font-bold text-learning-500">0</div>
-          <div className="text-xs text-neutral-gray">Students Enrolled</div>
+        <div className="text-center p-4 bg-orange-50 border-2 border-black">
+          <div
+            className="text-lg font-bold"
+            style={{ color: '#ff6b35' }}
+          >
+            0
+          </div>
+          <div className="text-xs text-gray-600">Students Enrolled</div>
         </div>
         
-        <div className="text-center p-4 bg-neutral-gray bg-opacity-5">
-          <div className="text-lg font-bold text-focus-500">0</div>
-          <div className="text-xs text-neutral-gray">Cards Created</div>
+        <div className="text-center p-4 bg-orange-50 border-2 border-black">
+          <div
+            className="text-lg font-bold"
+            style={{ color: '#ff6b35' }}
+          >
+            0
+          </div>
+          <div className="text-xs text-gray-600">Cards Created</div>
         </div>
         
-        <div className="text-center p-4 bg-neutral-gray bg-opacity-5">
-          <div className="text-lg font-bold text-achievement-500">0</div>
-          <div className="text-xs text-neutral-gray">Hours Saved</div>
+        <div className="text-center p-4 bg-orange-50 border-2 border-black">
+          <div
+            className="text-lg font-bold"
+            style={{ color: '#ff6b35' }}
+          >
+            0
+          </div>
+          <div className="text-xs text-gray-600">Hours Saved</div>
         </div>
       </div>
 
       {/* Tips Section */}
-      <div className="mt-6 p-4 bg-focus-50 border border-focus-200">
-        <h4 className="font-semibold text-focus-600 mb-2 flex items-center">
+      <div className="mt-6 p-4 bg-orange-50 border-2 border-black">
+        <h4
+          className="font-semibold mb-2 flex items-center"
+          style={{ color: '#ff6b35' }}
+        >
           💡 Pro Tips
         </h4>
-        <div className="space-y-2 text-sm text-neutral-gray">
+        <div className="space-y-2 text-sm text-gray-600">
           <div className="flex items-start space-x-2">
-            <span className="text-focus-500 mt-0.5">•</span>
+            <span style={{ color: '#ff6b35' }} className="mt-0.5">•</span>
             <span>Upload high-quality audio for better AI transcription and card generation</span>
           </div>
           <div className="flex items-start space-x-2">
-            <span className="text-focus-500 mt-0.5">•</span>
+            <span style={{ color: '#ff6b35' }} className="mt-0.5">•</span>
             <span>Add student emails during lesson creation to automatically send invitations</span>
           </div>
           <div className="flex items-start space-x-2">
-            <span className="text-focus-500 mt-0.5">•</span>
+            <span style={{ color: '#ff6b35' }} className="mt-0.5">•</span>
             <span>Review and edit AI-generated cards before approving for student use</span>
           </div>
         </div>
       </div>
-    </Card>
+    </div>
   )
 }
