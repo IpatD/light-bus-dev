@@ -1,8 +1,8 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Clock, CheckCircle2, Play, Plus, Star, Gift } from 'lucide-react'
+import { Clock, CheckCircle2, Play, Plus, Star, Gift, TrendingUp, Timer, Target, Award } from 'lucide-react'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 import { supabase } from '@/lib/supabase'
@@ -17,6 +17,15 @@ interface StudyCard {
   card_pool: 'new' | 'due'
   can_accept: boolean
   review_id: string
+}
+
+interface TodayStats {
+  cards_studied_today: number
+  total_cards_ready: number
+  study_time_minutes: number
+  sessions_completed: number
+  new_cards_accepted_today: number
+  cards_mastered_today: number
 }
 
 interface DueCardsSectionProps {
@@ -36,6 +45,34 @@ const DueCardsSection: React.FC<DueCardsSectionProps> = ({
 }) => {
   const [acceptingCards, setAcceptingCards] = useState(false)
   const [selectedNewCards, setSelectedNewCards] = useState<string[]>([])
+  const [todayStats, setTodayStats] = useState<TodayStats | null>(null)
+  const [statsLoading, setStatsLoading] = useState(false)
+
+  // Fetch today's study statistics
+  useEffect(() => {
+    fetchTodayStats()
+  }, [])
+
+  const fetchTodayStats = async () => {
+    try {
+      setStatsLoading(true)
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { data, error } = await supabase
+        .rpc('get_today_study_stats', { p_user_id: user.id })
+
+      if (error) throw error
+
+      if (data && data.length > 0) {
+        setTodayStats(data[0])
+      }
+    } catch (error) {
+      console.error('Error fetching today stats:', error)
+    } finally {
+      setStatsLoading(false)
+    }
+  }
 
   // Group new cards by lesson
   const newCardsByLesson = newCards.reduce((acc, card) => {
@@ -71,8 +108,9 @@ const DueCardsSection: React.FC<DueCardsSectionProps> = ({
 
       if (error) throw error
 
-      // Refresh the data
+      // Refresh the data and stats
       onRefresh?.()
+      fetchTodayStats()
       setSelectedNewCards([])
     } catch (error) {
       console.error('Error accepting cards:', error)
@@ -219,17 +257,45 @@ const DueCardsSection: React.FC<DueCardsSectionProps> = ({
           </div>
         ) : (
           <>
-            {/* Quick stats */}
-            <div className="grid grid-cols-2 gap-4 mb-6 p-4 bg-green-50 border-l-4 border-green-500">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">{dueCards.length}</div>
-                <div className="text-xs text-green-700">Cards Ready</div>
+            {/* Today's Study Statistics */}
+            {todayStats && (
+              <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-green-50 border border-green-200 rounded-lg">
+                <h4 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
+                  <TrendingUp size={20} className="text-green-600" />
+                  Today's Progress
+                </h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="text-center">
+                    <div className="flex items-center justify-center gap-1 mb-1">
+                      <Target size={16} className="text-blue-600" />
+                      <div className="text-2xl font-bold text-blue-600">{todayStats.cards_studied_today}</div>
+                    </div>
+                    <div className="text-xs text-gray-600">Cards Studied</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="flex items-center justify-center gap-1 mb-1">
+                      <Timer size={16} className="text-green-600" />
+                      <div className="text-2xl font-bold text-green-600">{todayStats.study_time_minutes}</div>
+                    </div>
+                    <div className="text-xs text-gray-600">Minutes</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="flex items-center justify-center gap-1 mb-1">
+                      <Award size={16} className="text-purple-600" />
+                      <div className="text-2xl font-bold text-purple-600">{todayStats.cards_mastered_today}</div>
+                    </div>
+                    <div className="text-xs text-gray-600">Mastered</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="flex items-center justify-center gap-1 mb-1">
+                      <CheckCircle2 size={16} className="text-orange-600" />
+                      <div className="text-2xl font-bold text-orange-600">{dueCards.length}</div>
+                    </div>
+                    <div className="text-xs text-gray-600">Ready Now</div>
+                  </div>
+                </div>
               </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">{Object.keys(dueCardsByLesson).length}</div>
-                <div className="text-xs text-blue-700">Lessons</div>
-              </div>
-            </div>
+            )}
 
             {/* Cards grouped by lesson */}
             <div className="space-y-4">
@@ -244,23 +310,30 @@ const DueCardsSection: React.FC<DueCardsSectionProps> = ({
               ))}
             </div>
 
-            {/* Study session CTA */}
-            <div className="mt-6 pt-6 border-t border-neutral-gray border-opacity-20">
-              <div className="bg-gradient-to-r from-green-500 to-blue-500 text-white p-6">
-                <h4 className="font-bold text-lg mb-2">Ready to boost your learning?</h4>
-                <p className="text-white text-opacity-90 mb-4">
-                  Consistent daily practice is the key to long-term retention. Let's tackle these cards!
-                </p>
-                <Button
-                  variant="accent"
-                  size="lg"
-                  onClick={() => onStartSession?.()}
-                  className="w-full sm:w-auto"
-                >
-                  Start Study Session ({dueCards.length} cards)
-                </Button>
+            {/* Simple study action */}
+            {dueCards.length > 0 && (
+              <div className="mt-6 pt-6 border-t border-gray-200">
+                <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
+                  <div>
+                    <p className="text-gray-700 font-medium">
+                      {dueCards.length} cards ready across {Object.keys(dueCardsByLesson).length} lessons
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      Cards will update automatically as you complete them
+                    </p>
+                  </div>
+                  <Button
+                    variant="primary"
+                    size="lg"
+                    onClick={() => onStartSession?.()}
+                    className="flex items-center gap-2 whitespace-nowrap"
+                  >
+                    <Play size={18} />
+                    Start Session
+                  </Button>
+                </div>
               </div>
-            </div>
+            )}
           </>
         )}
       </div>

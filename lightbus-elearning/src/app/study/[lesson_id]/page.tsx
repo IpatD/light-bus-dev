@@ -17,8 +17,16 @@ interface StudySessionPageProps {
   }
 }
 
+interface StudyCard extends SRCard {
+  review_id: string
+  card_pool: string
+  scheduled_for: string
+  repetition_count: number
+  ease_factor: number
+}
+
 interface StudySessionState {
-  cards: SRCard[]
+  cards: StudyCard[]
   currentIndex: number
   showAnswer: boolean
   reviews: StudyCardReview[]
@@ -78,8 +86,8 @@ export default function StudySessionPage({ params }: StudySessionPageProps) {
         return
       }
 
-      // Transform the data to match our SRCard interface
-      const cards: SRCard[] = cardsData.map((item: any) => ({
+      // Transform the data to match our StudyCard interface
+      const cards: StudyCard[] = cardsData.map((item: any) => ({
         id: item.card_id,
         lesson_id: item.lesson_id,
         created_by: '', // Not needed for study
@@ -90,7 +98,13 @@ export default function StudySessionPage({ params }: StudySessionPageProps) {
         tags: item.tags || [],
         status: 'approved' as const,
         created_at: '',
-        updated_at: ''
+        updated_at: '',
+        // Additional fields from get_cards_for_study
+        review_id: item.review_id,
+        card_pool: item.card_pool,
+        scheduled_for: item.scheduled_for,
+        repetition_count: item.repetition_count,
+        ease_factor: item.ease_factor
       }))
 
       setSession(prev => ({
@@ -116,23 +130,65 @@ export default function StudySessionPage({ params }: StudySessionPageProps) {
 
   const handleCardReview = async (quality: QualityRating, responseTime: number) => {
     const currentCard = session.cards[session.currentIndex]
-    if (!currentCard) return
+    if (!currentCard) {
+      console.error('No current card available for review')
+      return
+    }
+
+    console.log('=== LESSON STUDY SESSION REVIEW RECORDING ===')
+    console.log('Current card details:', {
+      card_id: currentCard.id,
+      review_id: currentCard.review_id,
+      lesson_id: currentCard.lesson_id,
+      front_content: currentCard.front_content.substring(0, 50) + '...',
+      card_pool: currentCard.card_pool,
+      scheduled_for: currentCard.scheduled_for,
+      repetition_count: currentCard.repetition_count,
+      ease_factor: currentCard.ease_factor,
+      params_lesson_id: params.lesson_id
+    })
+    
+    console.log('Review parameters being sent:', {
+      quality: quality,
+      responseTime: responseTime,
+      quality_type: typeof quality,
+      responseTime_type: typeof responseTime
+    })
 
     try {
       // Get current user
       const { data: { user }, error: userError } = await supabase.auth.getUser()
       if (userError || !user) throw new Error('Authentication required')
 
+      console.log('User ID for review:', user.id)
+
       // Record the review using our database function
+      console.log('Calling record_sr_review with:', {
+        p_user_id: user.id,
+        p_card_id: currentCard.id,
+        p_quality: quality,
+        p_response_time_ms: responseTime
+      })
+
       const { data, error } = await supabase
-        .rpc('record_sr_review', {
+        .rpc('record_sr_review_simple', {
           p_user_id: user.id,
           p_card_id: currentCard.id,
           p_quality: quality,
           p_response_time_ms: responseTime
         })
 
-      if (error) throw error
+      if (error) {
+        console.error('Database error in record_sr_review:', error)
+        console.error('Error details:', JSON.stringify(error, null, 2))
+        throw error
+      }
+
+      console.log('Review recorded successfully - Raw response:', data)
+      console.log('Response type:', typeof data, 'Length:', Array.isArray(data) ? data.length : 'N/A')
+      if (Array.isArray(data) && data.length > 0) {
+        console.log('First response item:', JSON.stringify(data[0], null, 2))
+      }
 
       // Add to reviews array
       const newReview: StudyCardReview = {
@@ -146,6 +202,13 @@ export default function StudySessionPage({ params }: StudySessionPageProps) {
         const nextIndex = prev.currentIndex + 1
         const isComplete = nextIndex >= prev.cards.length
 
+        console.log('Moving to next card:', {
+          currentIndex: prev.currentIndex,
+          nextIndex,
+          isComplete,
+          totalCards: prev.cards.length
+        })
+
         return {
           ...prev,
           reviews: newReviews,
@@ -157,6 +220,13 @@ export default function StudySessionPage({ params }: StudySessionPageProps) {
 
     } catch (error) {
       console.error('Error recording review:', error)
+      console.error('Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        card_id: currentCard.id,
+        lesson_id: params.lesson_id,
+        user_id: (await supabase.auth.getUser()).data.user?.id
+      })
+      
       // Still proceed to next card even if recording fails
       setSession(prev => {
         const nextIndex = prev.currentIndex + 1
