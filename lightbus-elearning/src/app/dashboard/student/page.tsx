@@ -42,6 +42,7 @@ export default function StudentDashboard() {
   const router = useRouter()
   const [user, setUser] = useState<User | null>(null)
   const [stats, setStats] = useState<UserStats | null>(null)
+  const [analyticsData, setAnalyticsData] = useState<any>(null)
   const [newCards, setNewCards] = useState<StudyCard[]>([])
   const [dueCards, setDueCards] = useState<StudyCard[]>([])
   const [recentLessons, setRecentLessons] = useState<LessonProgress[]>([])
@@ -130,6 +131,29 @@ export default function StudentDashboard() {
           weekly_progress: [0, 0, 0, 0, 0, 0, 0],
           monthly_progress: new Array(30).fill(0),
         })
+      }
+
+      // Get enhanced learning analytics
+      try {
+        const { data: enhancedAnalytics, error: analyticsError } = await supabase
+          .rpc('get_enhanced_learning_analytics', { p_user_id: authUser.id })
+
+        if (analyticsError) {
+          console.error('Error fetching enhanced analytics:', analyticsError)
+          setAnalyticsData(null)
+        } else if (enhancedAnalytics && enhancedAnalytics.length > 0) {
+          setAnalyticsData(enhancedAnalytics[0])
+        } else {
+          setAnalyticsData({
+            lessons_participated: 0,
+            cards_added: 0,
+            cards_studied: 0,
+            current_month_name: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+          })
+        }
+      } catch (analyticsError) {
+        console.error('Error in enhanced analytics operation:', analyticsError)
+        setAnalyticsData(null)
       }
 
       // Get cards for study with new system
@@ -557,6 +581,7 @@ export default function StudentDashboard() {
                   weeklyData={stats?.weekly_progress || [0, 0, 0, 0, 0, 0, 0]}
                   monthlyData={stats?.monthly_progress || new Array(30).fill(0)}
                   type={chartType}
+                  analyticsData={analyticsData}
                 />
               </div>
             </div>

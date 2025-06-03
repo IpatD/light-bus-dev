@@ -7,12 +7,19 @@ interface ProgressChartProps {
   weeklyData: number[]
   monthlyData: number[]
   type?: 'weekly' | 'monthly'
+  analyticsData?: {
+    lessons_participated: number
+    cards_added: number
+    cards_studied: number
+    current_month_name: string
+  }
 }
 
 const ProgressChart: React.FC<ProgressChartProps> = ({ 
   weeklyData, 
   monthlyData, 
-  type = 'weekly' 
+  type = 'weekly',
+  analyticsData 
 }) => {
   // Prepare weekly data
   const weeklyChartData = weeklyData.map((value, index) => {
@@ -25,10 +32,13 @@ const ProgressChart: React.FC<ProgressChartProps> = ({
     }
   })
 
-  // Prepare monthly data (show last 30 days)
+  // Prepare monthly data (current month from day 1 to last day)
   const monthlyChartData = monthlyData.map((value, index) => {
-    const date = new Date()
-    date.setDate(date.getDate() - (29 - index))
+    const startOfMonth = new Date()
+    startOfMonth.setDate(1)
+    const date = new Date(startOfMonth)
+    date.setDate(index + 1)
+    
     return {
       day: `${date.getDate()}`,
       reviews: value,
@@ -54,7 +64,7 @@ const ProgressChart: React.FC<ProgressChartProps> = ({
             {type === 'weekly' ? data.day : `${data.month} ${data.day}`}
           </p>
           <p className="text-learning-600">
-            <span className="font-medium">{payload[0].value}</span> reviews
+            <span className="font-medium">{payload[0].value}</span> cards studied
           </p>
         </div>
       )
@@ -65,18 +75,42 @@ const ProgressChart: React.FC<ProgressChartProps> = ({
   return (
     <div className="h-full">
       <div className="mb-6">
-        {/* Statistics Row */}
+        {/* Enhanced Statistics Row */}
         <div className="grid grid-cols-3 gap-4 mb-6">
-          <div className="text-center p-4 bg-learning-50 rounded-lg border border-learning-200">
-            <div className="text-xl font-bold text-learning-500">{totalReviews}</div>
-            <div className="text-xs text-neutral-gray">Total Reviews</div>
+          <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <div className="text-xl font-bold text-blue-600">
+              {analyticsData?.lessons_participated || 0}
+            </div>
+            <div className="text-xs text-neutral-gray">Lessons Joined</div>
           </div>
-          <div className="text-center p-4 bg-achievement-50 rounded-lg border border-achievement-200">
-            <div className="text-xl font-bold text-achievement-500">{avgReviews.toFixed(1)}</div>
+          <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
+            <div className="text-xl font-bold text-green-600">
+              {analyticsData?.cards_added || 0}
+            </div>
+            <div className="text-xs text-neutral-gray">Cards Added</div>
+          </div>
+          <div className="text-center p-4 bg-purple-50 rounded-lg border border-purple-200">
+            <div className="text-xl font-bold text-purple-600">
+              {analyticsData?.cards_studied || 0}
+            </div>
+            <div className="text-xs text-neutral-gray">Cards Studied</div>
+          </div>
+        </div>
+
+        {/* Period Statistics */}
+        <div className="grid grid-cols-3 gap-4 mb-6">
+          <div className="text-center p-4 bg-orange-50 rounded-lg border border-orange-200">
+            <div className="text-xl font-bold text-orange-600">{totalReviews}</div>
+            <div className="text-xs text-neutral-gray">
+              {type === 'weekly' ? 'Week' : analyticsData?.current_month_name || 'Month'} Total
+            </div>
+          </div>
+          <div className="text-center p-4 bg-teal-50 rounded-lg border border-teal-200">
+            <div className="text-xl font-bold text-teal-600">{avgReviews.toFixed(1)}</div>
             <div className="text-xs text-neutral-gray">Daily Average</div>
           </div>
-          <div className="text-center p-4 bg-focus-50 rounded-lg border border-focus-200">
-            <div className="text-xl font-bold text-focus-500">{currentStreak}</div>
+          <div className="text-center p-4 bg-pink-50 rounded-lg border border-pink-200">
+            <div className="text-xl font-bold text-pink-600">{currentStreak}</div>
             <div className="text-xs text-neutral-gray">Current Streak</div>
           </div>
         </div>
@@ -84,6 +118,15 @@ const ProgressChart: React.FC<ProgressChartProps> = ({
 
       {/* Chart */}
       <div className="h-64 bg-white rounded-lg border border-gray-200 p-4">
+        <div className="flex items-center justify-between mb-4">
+          <h4 className="font-semibold text-gray-800">
+            {type === 'weekly' ? 'Last 7 Days' : analyticsData?.current_month_name || 'This Month'}
+          </h4>
+          <div className="text-sm text-gray-500">
+            Cards studied per day
+          </div>
+        </div>
+        
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
             <defs>
@@ -128,7 +171,7 @@ const ProgressChart: React.FC<ProgressChartProps> = ({
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 bg-learning-500 rounded-full"></div>
-              <span className="text-neutral-gray">Best Day: {maxReviews} reviews</span>
+              <span className="text-neutral-gray">Best Day: {maxReviews} cards</span>
             </div>
             {currentStreak >= 3 && (
               <div className="flex items-center gap-1 text-achievement-600">
@@ -136,6 +179,33 @@ const ProgressChart: React.FC<ProgressChartProps> = ({
                 <span className="font-semibold">{currentStreak} day streak!</span>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Learning Progress Summary */}
+      {analyticsData && (
+        <div className="mt-4 pt-4 border-t border-neutral-gray border-opacity-20">
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <h5 className="font-semibold text-gray-800 mb-2">Learning Summary</h5>
+            <div className="text-sm text-gray-600 space-y-1">
+              <p>
+                📚 Participating in <span className="font-semibold text-blue-600">{analyticsData.lessons_participated}</span> lessons
+              </p>
+              <p>
+                🎯 <span className="font-semibold text-green-600">{analyticsData.cards_added}</span> cards available for study
+              </p>
+              <p>
+                ✅ Studied <span className="font-semibold text-purple-600">{analyticsData.cards_studied}</span> different cards
+              </p>
+              {analyticsData.cards_added > 0 && (
+                <p>
+                  📊 Progress: <span className="font-semibold text-orange-600">
+                    {Math.round((analyticsData.cards_studied / analyticsData.cards_added) * 100)}%
+                  </span> cards explored
+                </p>
+              )}
+            </div>
           </div>
         </div>
       )}
