@@ -50,12 +50,14 @@ export default function StudyAllSessionPage() {
         throw new Error('Please sign in to continue')
       }
 
-      // Fetch cards due for review from all lessons (no lesson_id filter)
+      // Fetch cards for study from all lessons using positive reinforcement system
       const { data: cardsData, error: cardsError } = await supabase
-        .rpc('get_cards_due', {
+        .rpc('get_cards_for_study', {
           p_user_id: user.id,
-          p_lesson_id: null, // null means all lessons
-          p_limit_count: 50 // Higher limit for mixed lesson study
+          p_pool_type: 'both',
+          p_limit_new: 20,
+          p_limit_due: 30,
+          p_lesson_id: null // null means all lessons
         })
 
       if (cardsError) throw cardsError

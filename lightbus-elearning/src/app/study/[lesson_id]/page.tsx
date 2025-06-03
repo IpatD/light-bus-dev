@@ -56,12 +56,14 @@ export default function StudySessionPage({ params }: StudySessionPageProps) {
         throw new Error('Please sign in to continue')
       }
 
-      // Fetch cards due for review using our database function
+      // Fetch cards for study using the positive reinforcement system
       const { data: cardsData, error: cardsError } = await supabase
-        .rpc('get_cards_due', {
+        .rpc('get_cards_for_study', {
           p_user_id: user.id,
-          p_lesson_id: params.lesson_id,
-          p_limit_count: 20
+          p_pool_type: 'both',
+          p_limit_new: 10,
+          p_limit_due: 15,
+          p_lesson_id: params.lesson_id
         })
 
       if (cardsError) throw cardsError
