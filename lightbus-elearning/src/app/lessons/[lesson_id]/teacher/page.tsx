@@ -38,6 +38,9 @@ export default function TeacherLessonDetailPage() {
   const [isAddingStudent, setIsAddingStudent] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [showDeleteCardModal, setShowDeleteCardModal] = useState(false)
+  const [cardToDelete, setCardToDelete] = useState<string | null>(null)
+  const [isDeletingCard, setIsDeletingCard] = useState(false)
 
   useEffect(() => {
     if (lessonId) {
@@ -184,6 +187,43 @@ export default function TeacherLessonDetailPage() {
       setIsDeleting(false)
       setShowDeleteModal(false)
     }
+  }
+
+  const handleDeleteCard = async () => {
+    if (!cardToDelete) return
+
+    setIsDeletingCard(true)
+    try {
+      const { data, error } = await supabase.rpc('delete_sr_card', {
+        p_card_id: cardToDelete
+      })
+
+      if (error) throw error
+
+      // The function returns a table, so data is an array
+      const result = data && data[0]
+      if (!result?.success) {
+        throw new Error(result?.error || 'Failed to delete card')
+      }
+
+      // Refresh lesson data to show updated card list
+      await fetchLessonData()
+      
+      // Show success message
+      alert(result.message || 'Card deleted successfully')
+    } catch (error: any) {
+      console.error('Error deleting card:', error)
+      alert(error.message || 'Failed to delete card')
+    } finally {
+      setIsDeletingCard(false)
+      setShowDeleteCardModal(false)
+      setCardToDelete(null)
+    }
+  }
+
+  const handleDeleteCardClick = (cardId: string) => {
+    setCardToDelete(cardId)
+    setShowDeleteCardModal(true)
   }
 
   if (isLoading) {
@@ -401,9 +441,19 @@ export default function TeacherLessonDetailPage() {
                             )}
                           </div>
                         </div>
-                        <Button variant="ghost" size="sm" className="text-neutral-gray hover:text-neutral-charcoal">
-                          Edit
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <Button variant="ghost" size="sm" className="text-neutral-gray hover:text-neutral-charcoal">
+                            Edit
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => handleDeleteCardClick(card.id)}
+                          >
+                            Delete
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -603,6 +653,22 @@ export default function TeacherLessonDetailPage() {
           confirmText="Delete Lesson"
           cancelText="Cancel"
           isLoading={isDeleting}
+          variant="danger"
+        />
+
+        {/* Card Delete Modal */}
+        <ConfirmationModal
+          isOpen={showDeleteCardModal}
+          onClose={() => {
+            setShowDeleteCardModal(false)
+            setCardToDelete(null)
+          }}
+          onConfirm={handleDeleteCard}
+          title="Delete Flashcard"
+          message="Are you sure you want to delete this flashcard? This action cannot be undone and will remove the card from all student study sessions."
+          confirmText="Delete Card"
+          cancelText="Cancel"
+          isLoading={isDeletingCard}
           variant="danger"
         />
       </div>
