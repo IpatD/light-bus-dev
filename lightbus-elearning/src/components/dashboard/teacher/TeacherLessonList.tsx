@@ -6,7 +6,6 @@ import { supabase } from '@/lib/supabase'
 import { Lesson } from '@/types'
 import Button from '@/components/ui/Button'
 import Card from '@/components/ui/Card'
-import ConfirmationModal from '@/components/ui/ConfirmationModal'
 
 interface TeacherLessonListProps {
   className?: string

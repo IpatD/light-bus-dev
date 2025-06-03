@@ -12,7 +12,7 @@ function CreateCardContent() {
   const handleSuccess = (cardId: string) => {
     // If we have a lesson ID, redirect to the lesson management page
     if (lessonId) {
-      router.push(`/lessons/${lessonId}/teacher/cards`)
+      router.push(`/lessons/${lessonId}/teacher`)
     } else {
       // Otherwise, go back to teacher dashboard
       router.push('/dashboard/teacher')

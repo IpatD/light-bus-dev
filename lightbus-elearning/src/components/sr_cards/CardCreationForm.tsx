@@ -145,13 +145,15 @@ export default function CardCreationForm({
 
       if (error) throw error
 
-      if (!data?.success) {
-        throw new Error(data?.error || 'Failed to create card')
+      // The function now returns a table, so data is an array
+      const result = data && data[0]
+      if (!result?.success) {
+        throw new Error(result?.error || 'Failed to create card')
       }
 
       // Success!
       if (onSuccess) {
-        onSuccess(data.data.id)
+        onSuccess(result.data.id)
       } else {
         // Reset form for creating another card
         setFormData(prev => ({
