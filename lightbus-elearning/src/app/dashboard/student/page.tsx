@@ -11,14 +11,16 @@ import DueCardsSection from '@/components/dashboard/student/DueCardsSection'
 import StudyStreakCard from '@/components/dashboard/student/StudyStreakCard'
 import RecentLessonsSection from '@/components/dashboard/student/RecentLessonsSection'
 
-interface DueCard {
-  id: string
+interface StudyCard {
+  card_id: string
   lesson_id: string
   lesson_name: string
   front_content: string
   difficulty_level: number
   scheduled_for: string
-  is_overdue: boolean
+  card_pool: 'new' | 'due'
+  can_accept: boolean
+  review_id: string
 }
 
 interface LessonProgress {
@@ -40,7 +42,8 @@ export default function StudentDashboard() {
   const router = useRouter()
   const [user, setUser] = useState<User | null>(null)
   const [stats, setStats] = useState<UserStats | null>(null)
-  const [dueCards, setDueCards] = useState<DueCard[]>([])
+  const [newCards, setNewCards] = useState<StudyCard[]>([])
+  const [dueCards, setDueCards] = useState<StudyCard[]>([])
   const [recentLessons, setRecentLessons] = useState<LessonProgress[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [chartType, setChartType] = useState<'weekly' | 'monthly'>('weekly')
@@ -129,66 +132,42 @@ export default function StudentDashboard() {
         })
       }
 
-      // Get due cards with improved error handling
+      // Get cards for study with new system
       try {
-        const { data: dueCardsData, error: dueCardsError } = await supabase
-          .rpc('get_cards_due', {
+        const { data: cardsData, error: cardsError } = await supabase
+          .rpc('get_cards_for_study', {
             p_user_id: authUser.id,
-            p_limit_count: 10
+            p_pool_type: 'both',
+            p_limit_new: 10,
+            p_limit_due: 15
           })
 
-        if (dueCardsError) {
-          console.error('Error fetching due cards:', dueCardsError)
+        if (cardsError) {
+          console.error('Error fetching cards:', cardsError)
+          setNewCards([])
           setDueCards([])
-        } else if (dueCardsData && dueCardsData.length > 0) {
-          // Transform and enrich the data
-          const transformedCards: DueCard[] = await Promise.all(
-            dueCardsData.map(async (item: any) => {
-              try {
-                // Get lesson name with error handling
-                const { data: lesson, error: lessonError } = await supabase
-                  .from('lessons')
-                  .select('name')
-                  .eq('id', item.lesson_id)
-                  .single()
+        } else if (cardsData && cardsData.length > 0) {
+          // Separate new and due cards
+          const newCardsArray: StudyCard[] = []
+          const dueCardsArray: StudyCard[] = []
 
-                if (lessonError) {
-                  console.error('Error fetching lesson name for card:', item.card_id, lessonError)
-                }
+          cardsData.forEach((card: any) => {
+            if (card.card_pool === 'new') {
+              newCardsArray.push(card)
+            } else if (card.card_pool === 'due') {
+              dueCardsArray.push(card)
+            }
+          })
 
-                const scheduledDate = new Date(item.scheduled_for)
-                const now = new Date()
-                
-                return {
-                  id: item.card_id,
-                  lesson_id: item.lesson_id,
-                  lesson_name: lesson?.name || 'Unknown Lesson',
-                  front_content: item.front_content,
-                  difficulty_level: item.difficulty_level,
-                  scheduled_for: item.scheduled_for,
-                  is_overdue: scheduledDate < now
-                }
-              } catch (cardError) {
-                console.error('Error processing card:', item.card_id, cardError)
-                // Return a fallback card
-                return {
-                  id: item.card_id,
-                  lesson_id: item.lesson_id,
-                  lesson_name: 'Unknown Lesson',
-                  front_content: item.front_content || 'Card content unavailable',
-                  difficulty_level: item.difficulty_level || 1,
-                  scheduled_for: item.scheduled_for,
-                  is_overdue: false
-                }
-              }
-            })
-          )
-          setDueCards(transformedCards)
+          setNewCards(newCardsArray)
+          setDueCards(dueCardsArray)
         } else {
+          setNewCards([])
           setDueCards([])
         }
       } catch (cardsError) {
-        console.error('Error in due cards operation:', cardsError)
+        console.error('Error in cards operation:', cardsError)
+        setNewCards([])
         setDueCards([])
       }
 
@@ -377,9 +356,9 @@ export default function StudentDashboard() {
                       className="text-3xl font-bold group-hover:scale-110 transition-transform"
                       style={{ color: '#ff6b35' }}
                     >
-                      {stats?.cards_due_today || 0}
+                      {dueCards.length || 0}
                     </div>
-                    <div className="text-sm font-semibold text-gray-600">Due Today</div>
+                    <div className="text-sm font-semibold text-gray-600">Ready to Study</div>
                   </div>
                 </div>
                 <div className="w-full bg-orange-100 h-3 border-2 border-black">
@@ -387,7 +366,37 @@ export default function StudentDashboard() {
                     className="h-full transition-all duration-500 border-r-2 border-black"
                     style={{
                       backgroundColor: '#ff6b35',
-                      width: `${Math.min((stats?.cards_due_today || 0) / 20 * 100, 100)}%`
+                      width: `${Math.min((dueCards.length || 0) / 20 * 100, 100)}%`
+                    }}
+                  ></div>
+                </div>
+              </div>
+
+              {/* New Cards Available Bento */}
+              <div className="bg-white border-4 border-black shadow-lg p-6 hover:shadow-xl transition-all duration-300 group">
+                <div className="flex items-center justify-between mb-4">
+                  <div
+                    className="p-3 text-white shadow-lg border-2 border-black"
+                    style={{ backgroundColor: '#4ade80' }}
+                  >
+                    <span className="text-2xl">🎁</span>
+                  </div>
+                  <div className="text-right">
+                    <div
+                      className="text-3xl font-bold group-hover:scale-110 transition-transform"
+                      style={{ color: '#4ade80' }}
+                    >
+                      {newCards.length || 0}
+                    </div>
+                    <div className="text-sm font-semibold text-gray-600">New Cards</div>
+                  </div>
+                </div>
+                <div className="w-full bg-green-100 h-3 border-2 border-black">
+                  <div
+                    className="h-full transition-all duration-500 border-r-2 border-black"
+                    style={{
+                      backgroundColor: '#4ade80',
+                      width: `${Math.min((newCards.length || 0) / 10 * 100, 100)}%`
                     }}
                   ></div>
                 </div>
@@ -453,29 +462,6 @@ export default function StudentDashboard() {
                 </div>
               </div>
 
-              {/* Total Reviews Bento */}
-              <div className="bg-white border-4 border-black shadow-lg p-6 hover:shadow-xl transition-all duration-300 group">
-                <div className="flex items-center justify-between mb-4">
-                  <div
-                    className="p-3 text-white shadow-lg border-2 border-black"
-                    style={{ backgroundColor: '#ff6b35' }}
-                  >
-                    <span className="text-2xl">📊</span>
-                  </div>
-                  <div className="text-right">
-                    <div
-                      className="text-3xl font-bold group-hover:scale-110 transition-transform"
-                      style={{ color: '#ff6b35' }}
-                    >
-                      {stats?.total_reviews || 0}
-                    </div>
-                    <div className="text-sm font-semibold text-gray-600">Reviews</div>
-                  </div>
-                </div>
-                <div className="text-xs font-medium" style={{ color: '#ff6b35' }}>
-                  All time total
-                </div>
-              </div>
             </div>
           </div>
 
@@ -496,10 +482,11 @@ export default function StudentDashboard() {
               </div>
               <div className="p-6">
                 <DueCardsSection
-                  cards={dueCards}
-                  totalDue={stats?.cards_due_today || 0}
+                  newCards={newCards}
+                  dueCards={dueCards}
                   isLoading={false}
                   onStartSession={handleStartStudySession}
+                  onRefresh={fetchDashboardData}
                 />
               </div>
             </div>
