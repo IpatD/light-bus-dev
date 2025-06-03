@@ -460,20 +460,15 @@ export default function TeacherLessonDetailPage() {
                   
                   {cards.length > 5 && (
                     <div className="text-center pt-4">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-focus-600 hover:bg-focus-50"
-                        onClick={() => {
-                          // Scroll to the cards section
-                          const cardsSection = document.querySelector('[data-cards-section]');
-                          if (cardsSection) {
-                            cardsSection.scrollIntoView({ behavior: 'smooth' });
-                          }
-                        }}
-                      >
-                        View All Cards ({cards.length})
-                      </Button>
+                      <Link href={`/lessons/${lessonId}/cards`}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-focus-600 hover:bg-focus-50"
+                        >
+                          View All Cards ({cards.length})
+                        </Button>
+                      </Link>
                     </div>
                   )}
                 </div>
