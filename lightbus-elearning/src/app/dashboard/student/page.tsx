@@ -10,7 +10,7 @@ import ProgressChart from '@/components/dashboard/student/ProgressChart'
 import DueCardsSection from '@/components/dashboard/student/DueCardsSection'
 import StudyStreakCard from '@/components/dashboard/student/StudyStreakCard'
 import RecentLessonsSection from '@/components/dashboard/student/RecentLessonsSection'
-import { getUserTimezone, getTimezoneParams, debugDateComparison } from '@/utils/dateHelpers'
+import { getUserTimezone, debugDateComparison } from '@/utils/dateHelpers'
 
 interface StudyCard {
   card_id: string
@@ -39,30 +39,160 @@ interface LessonProgress {
   last_activity?: string
 }
 
+interface DashboardData {
+  user: User
+  stats: UserStats
+  analyticsData: any
+  newCards: StudyCard[]
+  dueCards: StudyCard[]
+  recentLessons: LessonProgress[]
+}
+
+// EXTRACTED: Default stats to avoid repetition
+const DEFAULT_STATS: UserStats = {
+  total_reviews: 0,
+  average_quality: 0.0,
+  study_streak: 0,
+  cards_learned: 0,
+  cards_due_today: 0,
+  next_review_date: undefined,
+  weekly_progress: [0, 0, 0, 0, 0, 0, 0],
+  monthly_progress: new Array(30).fill(0),
+}
+
 export default function StudentDashboard() {
   const router = useRouter()
-  const [user, setUser] = useState<User | null>(null)
-  const [stats, setStats] = useState<UserStats | null>(null)
-  const [analyticsData, setAnalyticsData] = useState<any>(null)
-  const [newCards, setNewCards] = useState<StudyCard[]>([])
-  const [dueCards, setDueCards] = useState<StudyCard[]>([])
-  const [recentLessons, setRecentLessons] = useState<LessonProgress[]>([])
+  const [dashboardData, setDashboardData] = useState<Partial<DashboardData>>({})
   const [isLoading, setIsLoading] = useState(true)
   const [chartType, setChartType] = useState<'weekly' | 'monthly'>('weekly')
-
-  // FIXED: Get user timezone for consistent backend calls
   const userTimezone = getUserTimezone()
-  const timezoneParams = getTimezoneParams()
 
   useEffect(() => {
     fetchDashboardData()
   }, [])
 
+  // EXTRACTED: Stats processing helper
+  const processStatsData = (rawStats: any): UserStats => {
+    if (!rawStats) return DEFAULT_STATS
+    
+    return {
+      total_reviews: Number(rawStats.total_reviews) || 0,
+      average_quality: Number(rawStats.average_quality) || 0.0,
+      study_streak: Number(rawStats.study_streak) || 0,
+      cards_learned: Number(rawStats.cards_learned) || 0,
+      cards_due_today: Number(rawStats.cards_due_today) || 0,
+      next_review_date: rawStats.next_review_date,
+      weekly_progress: rawStats.weekly_progress || [0, 0, 0, 0, 0, 0, 0],
+      monthly_progress: rawStats.monthly_progress || new Array(30).fill(0),
+    }
+  }
+
+  // EXTRACTED: User stats fetching with fallback
+  const fetchUserStats = async (userId: string): Promise<UserStats> => {
+    try {
+      // Try timezone-aware function first
+      const { data: userStats, error: statsError } = await supabase
+        .rpc('get_user_stats_with_timezone', { 
+          p_user_id: userId,
+          p_client_timezone: userTimezone
+        })
+
+      if (!statsError && userStats?.[0]) {
+        const stats = processStatsData(userStats[0])
+        
+        // Debug in development
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Stats loaded:', {
+            timezone: userTimezone,
+            study_streak: stats.study_streak,
+            weekly_progress: stats.weekly_progress,
+          })
+        }
+        
+        return stats
+      }
+
+      // Fallback to regular function
+      console.warn('Timezone-aware stats failed, using fallback')
+      const { data: fallbackStats, error: fallbackError } = await supabase
+        .rpc('get_user_stats', { p_user_id: userId })
+      
+      if (!fallbackError && fallbackStats?.[0]) {
+        return processStatsData(fallbackStats[0])
+      }
+
+      throw new Error('Both stats functions failed')
+    } catch (error) {
+      console.error('Error fetching user stats:', error)
+      return DEFAULT_STATS
+    }
+  }
+
+  // EXTRACTED: Cards separation helper
+  const separateCards = (cardsData: any[]): { newCards: StudyCard[], dueCards: StudyCard[] } => {
+    const newCards: StudyCard[] = []
+    const dueCards: StudyCard[] = []
+
+    cardsData.forEach((card: any) => {
+      if (card.card_pool === 'new') {
+        newCards.push(card)
+      } else if (card.card_pool === 'due') {
+        dueCards.push(card)
+      }
+    })
+
+    return { newCards, dueCards }
+  }
+
+  // EXTRACTED: Lesson enrichment helper
+  const enrichLessonData = async (userId: string, lessonItem: any): Promise<LessonProgress> => {
+    try {
+      // Get teacher name and lesson details
+      const { data: lesson } = await supabase
+        .from('lessons')
+        .select(`scheduled_at, teacher_id, profiles!lessons_teacher_id_fkey(name)`)
+        .eq('id', lessonItem.lesson_id)
+        .single()
+
+      return {
+        lesson_id: lessonItem.lesson_id,
+        lesson_name: lessonItem.lesson_name || 'Unknown Lesson',
+        teacher_name: (lesson?.profiles as any)?.name || 'Unknown Teacher',
+        scheduled_at: lesson?.scheduled_at || new Date().toISOString(),
+        cards_total: lessonItem.cards_total || 0,
+        cards_reviewed: lessonItem.cards_reviewed || 0,
+        cards_learned: lessonItem.cards_learned || 0,
+        cards_due: lessonItem.cards_due || 0,
+        average_quality: Number(lessonItem.average_quality) || 0,
+        progress_percentage: Number(lessonItem.progress_percentage) || 0,
+        next_review_date: lessonItem.next_review_date,
+        last_activity: undefined // Simplified - remove complex last review lookup
+      }
+    } catch (error) {
+      console.error('Error enriching lesson:', lessonItem.lesson_id, error)
+      return {
+        lesson_id: lessonItem.lesson_id,
+        lesson_name: lessonItem.lesson_name || 'Unknown Lesson',
+        teacher_name: 'Unknown Teacher',
+        scheduled_at: new Date().toISOString(),
+        cards_total: lessonItem.cards_total || 0,
+        cards_reviewed: lessonItem.cards_reviewed || 0,
+        cards_learned: lessonItem.cards_learned || 0,
+        cards_due: lessonItem.cards_due || 0,
+        average_quality: Number(lessonItem.average_quality) || 0,
+        progress_percentage: Number(lessonItem.progress_percentage) || 0,
+        next_review_date: lessonItem.next_review_date,
+        last_activity: undefined
+      }
+    }
+  }
+
+  // MAIN: Simplified dashboard data fetching
   const fetchDashboardData = async () => {
     try {
       setIsLoading(true)
       
-      // Get current user
+      // Get authenticated user
       const { data: { user: authUser }, error: userError } = await supabase.auth.getUser()
       if (userError || !authUser) {
         router.push('/auth/login')
@@ -86,269 +216,147 @@ export default function StudentDashboard() {
         created_at: profile.created_at,
         updated_at: profile.updated_at,
       }
-      setUser(userData)
 
-      // FIXED: Get timezone-aware user statistics
-      try {
-        const { data: userStats, error: statsError } = await supabase
-          .rpc('get_user_stats_with_timezone', { 
-            p_user_id: authUser.id,
-            p_client_timezone: userTimezone
-          })
-
-        if (statsError) {
-          console.error('Error fetching timezone-aware user stats:', statsError)
-          // Fallback to regular function if timezone version fails
-          const { data: fallbackStats, error: fallbackError } = await supabase
-            .rpc('get_user_stats', { p_user_id: authUser.id })
-          
-          if (fallbackError) throw fallbackError
-          
-          if (fallbackStats && fallbackStats.length > 0) {
-            const stats = fallbackStats[0]
-            setStats({
-              total_reviews: Number(stats.total_reviews) || 0,
-              average_quality: Number(stats.average_quality) || 0.0,
-              study_streak: Number(stats.study_streak) || 0,
-              cards_learned: Number(stats.cards_learned) || 0,
-              cards_due_today: Number(stats.cards_due_today) || 0,
-              next_review_date: stats.next_review_date,
-              weekly_progress: stats.weekly_progress || [0, 0, 0, 0, 0, 0, 0],
-              monthly_progress: stats.monthly_progress || new Array(30).fill(0),
-            })
-          }
-        } else if (userStats && userStats.length > 0) {
-          const stats = userStats[0]
-          setStats({
-            total_reviews: Number(stats.total_reviews) || 0,
-            average_quality: Number(stats.average_quality) || 0.0,
-            study_streak: Number(stats.study_streak) || 0,
-            cards_learned: Number(stats.cards_learned) || 0,
-            cards_due_today: Number(stats.cards_due_today) || 0,
-            next_review_date: stats.next_review_date,
-            weekly_progress: stats.weekly_progress || [0, 0, 0, 0, 0, 0, 0],
-            monthly_progress: stats.monthly_progress || new Array(30).fill(0),
-          })
-
-          // Debug timezone-aware stats in development
-          if (process.env.NODE_ENV === 'development') {
-            console.log('Timezone-aware stats loaded:', {
-              timezone: userTimezone,
-              study_streak: stats.study_streak,
-              cards_due_today: stats.cards_due_today,
-              next_review_date: stats.next_review_date,
-              next_review_debug: stats.next_review_date ? debugDateComparison(stats.next_review_date + 'T00:00:00Z', userTimezone) : null
-            })
-          }
-        } else {
-          // No stats data found - use defaults
-          setStats({
-            total_reviews: 0,
-            average_quality: 0.0,
-            study_streak: 0,
-            cards_learned: 0,
-            cards_due_today: 0,
-            next_review_date: undefined,
-            weekly_progress: [0, 0, 0, 0, 0, 0, 0],
-            monthly_progress: new Array(30).fill(0),
-          })
-        }
-      } catch (statsError) {
-        console.error('Error in user stats operation:', statsError)
-        // Use fallback stats
-        setStats({
-          total_reviews: 0,
-          average_quality: 0.0,
-          study_streak: 0,
-          cards_learned: 0,
-          cards_due_today: 0,
-          next_review_date: undefined,
-          weekly_progress: [0, 0, 0, 0, 0, 0, 0],
-          monthly_progress: new Array(30).fill(0),
-        })
-      }
-
-      // Get enhanced learning analytics
-      try {
-        const { data: enhancedAnalytics, error: analyticsError } = await supabase
-          .rpc('get_enhanced_learning_analytics', { p_user_id: authUser.id })
-
-        if (analyticsError) {
-          console.error('Error fetching enhanced analytics:', analyticsError)
-          setAnalyticsData(null)
-        } else if (enhancedAnalytics && enhancedAnalytics.length > 0) {
-          setAnalyticsData(enhancedAnalytics[0])
-        } else {
-          setAnalyticsData({
-            lessons_participated: 0,
-            cards_added: 0,
-            cards_studied: 0,
-            current_month_name: new Date().toLocaleDateString('en-US', { 
-              month: 'long', 
-              year: 'numeric',
-              timeZone: userTimezone
-            })
-          })
-        }
-      } catch (analyticsError) {
-        console.error('Error in enhanced analytics operation:', analyticsError)
-        setAnalyticsData(null)
-      }
-
-      // Get cards for study with new system
-      try {
-        const { data: cardsData, error: cardsError } = await supabase
-          .rpc('get_cards_for_study', {
-            p_user_id: authUser.id,
-            p_pool_type: 'both',
-            p_limit_new: 10,
-            p_limit_due: 15
-          })
-
-        if (cardsError) {
-          console.error('Error fetching cards:', cardsError)
-          setNewCards([])
-          setDueCards([])
-        } else if (cardsData && cardsData.length > 0) {
-          // Separate new and due cards
-          const newCardsArray: StudyCard[] = []
-          const dueCardsArray: StudyCard[] = []
-
-          cardsData.forEach((card: any) => {
-            if (card.card_pool === 'new') {
-              newCardsArray.push(card)
-            } else if (card.card_pool === 'due') {
-              dueCardsArray.push(card)
-            }
-          })
-
-          setNewCards(newCardsArray)
-          setDueCards(dueCardsArray)
-
-          // Debug cards data in development
-          if (process.env.NODE_ENV === 'development') {
-            console.log('Cards loaded:', {
-              timezone: userTimezone,
-              new_cards: newCardsArray.length,
-              due_cards: dueCardsArray.length,
-              sample_due_card: dueCardsArray[0] ? {
-                scheduled_for: dueCardsArray[0].scheduled_for,
-                scheduled_debug: debugDateComparison(dueCardsArray[0].scheduled_for, userTimezone)
-              } : null
-            })
-          }
-        } else {
-          setNewCards([])
-          setDueCards([])
-        }
-      } catch (cardsError) {
-        console.error('Error in cards operation:', cardsError)
-        setNewCards([])
-        setDueCards([])
-      }
-
-      // Get lesson progress with improved error handling
-      try {
-        const { data: lessonsData, error: lessonsError } = await supabase
-          .rpc('get_lesson_progress', { p_student_id: authUser.id })
-
-        if (lessonsError) {
-          console.error('Error fetching lesson progress:', lessonsError)
-          setRecentLessons([])
-        } else if (lessonsData && lessonsData.length > 0) {
-          // Transform and enrich lesson data
-          const transformedLessons: LessonProgress[] = await Promise.all(
-            lessonsData.slice(0, 5).map(async (item: any) => {
-              try {
-                // Get teacher name and lesson details with error handling
-                const { data: lesson, error: lessonError } = await supabase
-                  .from('lessons')
-                  .select(`
-                    scheduled_at,
-                    teacher_id,
-                    profiles!lessons_teacher_id_fkey(name)
-                  `)
-                  .eq('id', item.lesson_id)
-                  .single()
-
-                if (lessonError) {
-                  console.error('Error fetching lesson details for:', item.lesson_id, lessonError)
-                }
-
-                // Get last activity using the new safe function
-                let lastReview = null
-                try {
-                  const { data: lastReviewData, error: reviewError } = await supabase
-                    .rpc('get_student_last_review', { p_student_id: authUser.id })
-
-                  if (reviewError) {
-                    console.error('Error fetching last review for student:', authUser.id, reviewError)
-                  } else {
-                    lastReview = lastReviewData && lastReviewData.length > 0 ? lastReviewData[0] : null
-                  }
-                } catch (reviewError) {
-                  console.error('Error in last review query:', reviewError)
-                  lastReview = null
-                }
-
-                return {
-                  lesson_id: item.lesson_id,
-                  lesson_name: item.lesson_name || 'Unknown Lesson',
-                  teacher_name: (lesson?.profiles as any)?.name || 'Unknown Teacher',
-                  scheduled_at: lesson?.scheduled_at || new Date().toISOString(),
-                  cards_total: item.cards_total || 0,
-                  cards_reviewed: item.cards_reviewed || 0,
-                  cards_learned: item.cards_learned || 0,
-                  cards_due: item.cards_due || 0,
-                  average_quality: Number(item.average_quality) || 0,
-                  progress_percentage: Number(item.progress_percentage) || 0,
-                  next_review_date: item.next_review_date,
-                  last_activity: lastReview?.completed_at
-                }
-              } catch (lessonError) {
-                console.error('Error processing lesson:', item.lesson_id, lessonError)
-                // Return a fallback lesson
-                return {
-                  lesson_id: item.lesson_id,
-                  lesson_name: item.lesson_name || 'Unknown Lesson',
-                  teacher_name: 'Unknown Teacher',
-                  scheduled_at: new Date().toISOString(),
-                  cards_total: item.cards_total || 0,
-                  cards_reviewed: item.cards_reviewed || 0,
-                  cards_learned: item.cards_learned || 0,
-                  cards_due: item.cards_due || 0,
-                  average_quality: Number(item.average_quality) || 0,
-                  progress_percentage: Number(item.progress_percentage) || 0,
-                  next_review_date: item.next_review_date,
-                  last_activity: undefined
-                }
+      // Fetch all data in parallel
+      const [stats, analyticsData, cardsData, lessonsData] = await Promise.allSettled([
+        fetchUserStats(authUser.id),
+        
+        supabase.rpc('get_enhanced_learning_analytics', { p_user_id: authUser.id })
+          .then(({ data, error }) => {
+            if (error || !data?.[0]) {
+              return {
+                lessons_participated: 0,
+                cards_added: 0,
+                cards_studied: 0,
+                current_month_name: new Date().toLocaleDateString('en-US', { 
+                  month: 'long', 
+                  year: 'numeric',
+                  timeZone: userTimezone
+                })
               }
-            })
-          )
-          setRecentLessons(transformedLessons)
-        } else {
-          setRecentLessons([])
-        }
-      } catch (lessonsError) {
-        console.error('Error in lesson progress operation:', lessonsError)
-        setRecentLessons([])
-      }
+            }
+            return data[0]
+          }),
+        
+        supabase.rpc('get_cards_for_study', {
+          p_user_id: authUser.id,
+          p_pool_type: 'both',
+          p_limit_new: 10,
+          p_limit_due: 15
+        }).then(({ data, error }) => {
+          if (error || !data) return []
+          return data
+        }),
+        
+        supabase.rpc('get_lesson_progress', { p_student_id: authUser.id })
+          .then(({ data, error }) => {
+            if (error || !data) return []
+            return data.slice(0, 5)
+          })
+      ])
+
+      // Process results
+      const userStats = stats.status === 'fulfilled' ? stats.value : DEFAULT_STATS
+      const analytics = analyticsData.status === 'fulfilled' ? analyticsData.value : null
+      const cards = cardsData.status === 'fulfilled' ? cardsData.value : []
+      const lessons = lessonsData.status === 'fulfilled' ? lessonsData.value : []
+
+      const { newCards, dueCards } = separateCards(cards)
+      
+      // Enrich lesson data - FIXED: Added explicit type
+      const enrichedLessons = await Promise.all(
+        lessons.map((lesson: any) => enrichLessonData(authUser.id, lesson))
+      )
+
+      // Update state
+      setDashboardData({
+        user: userData,
+        stats: userStats,
+        analyticsData: analytics,
+        newCards,
+        dueCards,
+        recentLessons: enrichedLessons
+      })
 
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
+      // Set fallback data
+      setDashboardData({
+        stats: DEFAULT_STATS,
+        newCards: [],
+        dueCards: [],
+        recentLessons: []
+      })
     } finally {
       setIsLoading(false)
     }
   }
 
   const handleStartStudySession = (lessonId?: string) => {
-    if (lessonId) {
-      router.push(`/study/${lessonId}`)
-    } else {
-      // Start general study session with all due cards
-      router.push('/study/all')
-    }
+    router.push(lessonId ? `/study/${lessonId}` : '/study/all')
   }
+
+  // EXTRACTED: Stat card component to reduce JSX repetition
+  const StatCard = ({ 
+    icon, 
+    value, 
+    label, 
+    color, 
+    bgColor, 
+    progressValue, 
+    maxProgress = 100,
+    subtitle 
+  }: {
+    icon: string
+    value: number
+    label: string
+    color: string
+    bgColor: string
+    progressValue?: number
+    maxProgress?: number
+    subtitle?: string
+  }) => (
+    <div className="bg-white border-4 border-black shadow-lg p-6 hover:shadow-xl transition-all duration-300 group">
+      <div className="flex items-center justify-between mb-4">
+        <div className="p-3 text-white shadow-lg border-2 border-black" style={{ backgroundColor: color }}>
+          <span className="text-2xl">{icon}</span>
+        </div>
+        <div className="text-right">
+          <div className="text-3xl font-bold group-hover:scale-110 transition-transform" style={{ color }}>
+            {value}
+          </div>
+          <div className="text-sm font-semibold text-gray-600">{label}</div>
+        </div>
+      </div>
+      {progressValue !== undefined ? (
+        <div className={`w-full ${bgColor} h-3 border-2 border-black`}>
+          <div
+            className="h-full transition-all duration-500 border-r-2 border-black"
+            style={{
+              backgroundColor: color,
+              width: `${Math.min((progressValue / maxProgress) * 100, 100)}%`
+            }}
+          />
+        </div>
+      ) : subtitle ? (
+        <div className="text-xs font-medium" style={{ color }}>
+          {subtitle}
+        </div>
+      ) : (
+        <div className="flex space-x-1">
+          {[...Array(7)].map((_, i) => (
+            <div
+              key={i}
+              className="flex-1 h-3 border border-black"
+              style={{
+                backgroundColor: i < (value % 7) + 1 ? color : '#e5e7eb'
+              }}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  )
 
   if (isLoading) {
     return (
@@ -374,9 +382,9 @@ export default function StudentDashboard() {
     )
   }
 
-  if (!user) {
+  if (!dashboardData.user) {
     return (
-      <div className="bg-neutral-white flex items-center justify-center">
+      <div className="bg-neutral-white flex items-center justify-center min-h-screen">
         <Card variant="default" padding="lg" className="text-center">
           <h2 className="heading-3 mb-4">Access Denied</h2>
           <p className="text-neutral-gray mb-6">Please sign in to access your dashboard.</p>
@@ -388,35 +396,33 @@ export default function StudentDashboard() {
     )
   }
 
+  const { user, stats, analyticsData, newCards, dueCards, recentLessons } = dashboardData
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Development Debug Panel */}
       {process.env.NODE_ENV === 'development' && (
         <div className="bg-yellow-50 border-b border-yellow-200 p-2">
           <details className="text-xs">
-            <summary className="cursor-pointer text-yellow-800">🔧 Debug: Timezone & Date Info</summary>
+            <summary className="cursor-pointer text-yellow-800">🔧 Debug: Dashboard Data</summary>
             <div className="mt-2 text-yellow-700">
-              <p><strong>User Timezone:</strong> {userTimezone}</p>
-              <p><strong>Cards Due:</strong> {dueCards.length} | <strong>New Cards:</strong> {newCards.length}</p>
-              <p><strong>Study Streak:</strong> {stats?.study_streak || 0}</p>
-              <p><strong>Next Review:</strong> {stats?.next_review_date || 'None'}</p>
+              <p><strong>Timezone:</strong> {userTimezone}</p>
+              <p><strong>Cards:</strong> {dueCards?.length || 0} due, {newCards?.length || 0} new</p>
+              <p><strong>Streak:</strong> {stats?.study_streak || 0}</p>
+              <p><strong>Weekly Progress:</strong> {JSON.stringify(stats?.weekly_progress)}</p>
             </div>
           </details>
         </div>
       )}
 
-      {/* Main Dashboard Container with Bento Layout */}
       <div className="container mx-auto px-6 py-8 max-w-7xl">
         
-        {/* Welcome Hero Bento */}
+        {/* Welcome Hero */}
         <div className="mb-8">
-          <div
-            className="bg-white border-4 border-black shadow-xl p-8 overflow-hidden relative"
-            style={{ backgroundColor: '#ff6b35' }}
-          >
+          <div className="bg-white border-4 border-black shadow-xl p-8 overflow-hidden relative" style={{ backgroundColor: '#ff6b35' }}>
             <div className="relative z-10">
               <h1 className="text-4xl font-bold mb-3 text-white">
-                Welcome back, <span className="text-yellow-200">{user.name}</span>!
+                Welcome back, <span className="text-yellow-200">{user?.name}</span>!
                 <span className="ml-2">🚀</span>
               </h1>
               <p className="text-orange-100 text-lg">
@@ -427,142 +433,52 @@ export default function StudentDashboard() {
           </div>
         </div>
 
-        {/* Main Bento Grid Layout */}
+        {/* Main Grid */}
         <div className="grid grid-cols-12 gap-6">
           
-          {/* Stats Overview Bento - Spans 12 columns */}
+          {/* Stats Overview */}
           <div className="col-span-12">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {/* Cards Due Bento */}
-              <div className="bg-white border-4 border-black shadow-lg p-6 hover:shadow-xl transition-all duration-300 group">
-                <div className="flex items-center justify-between mb-4">
-                  <div
-                    className="p-3 text-white shadow-lg border-2 border-black"
-                    style={{ backgroundColor: '#ff6b35' }}
-                  >
-                    <span className="text-2xl">🎯</span>
-                  </div>
-                  <div className="text-right">
-                    <div
-                      className="text-3xl font-bold group-hover:scale-110 transition-transform"
-                      style={{ color: '#ff6b35' }}
-                    >
-                      {dueCards.length || 0}
-                    </div>
-                    <div className="text-sm font-semibold text-gray-600">Ready to Study</div>
-                  </div>
-                </div>
-                <div className="w-full bg-orange-100 h-3 border-2 border-black">
-                  <div
-                    className="h-full transition-all duration-500 border-r-2 border-black"
-                    style={{
-                      backgroundColor: '#ff6b35',
-                      width: `${Math.min((dueCards.length || 0) / 20 * 100, 100)}%`
-                    }}
-                  ></div>
-                </div>
-              </div>
-
-              {/* New Cards Available Bento */}
-              <div className="bg-white border-4 border-black shadow-lg p-6 hover:shadow-xl transition-all duration-300 group">
-                <div className="flex items-center justify-between mb-4">
-                  <div
-                    className="p-3 text-white shadow-lg border-2 border-black"
-                    style={{ backgroundColor: '#4ade80' }}
-                  >
-                    <span className="text-2xl">🎁</span>
-                  </div>
-                  <div className="text-right">
-                    <div
-                      className="text-3xl font-bold group-hover:scale-110 transition-transform"
-                      style={{ color: '#4ade80' }}
-                    >
-                      {newCards.length || 0}
-                    </div>
-                    <div className="text-sm font-semibold text-gray-600">New Cards</div>
-                  </div>
-                </div>
-                <div className="w-full bg-green-100 h-3 border-2 border-black">
-                  <div
-                    className="h-full transition-all duration-500 border-r-2 border-black"
-                    style={{
-                      backgroundColor: '#4ade80',
-                      width: `${Math.min((newCards.length || 0) / 10 * 100, 100)}%`
-                    }}
-                  ></div>
-                </div>
-              </div>
-
-              {/* Study Streak Bento */}
-              <div className="bg-white border-4 border-black shadow-lg p-6 hover:shadow-xl transition-all duration-300 group">
-                <div className="flex items-center justify-between mb-4">
-                  <div
-                    className="p-3 text-white shadow-lg border-2 border-black"
-                    style={{ backgroundColor: '#ff6b35' }}
-                  >
-                    <span className="text-2xl">🔥</span>
-                  </div>
-                  <div className="text-right">
-                    <div
-                      className="text-3xl font-bold group-hover:scale-110 transition-transform"
-                      style={{ color: '#ff6b35' }}
-                    >
-                      {stats?.study_streak || 0}
-                    </div>
-                    <div className="text-sm font-semibold text-gray-600">Day Streak</div>
-                  </div>
-                </div>
-                <div className="flex space-x-1">
-                  {[...Array(7)].map((_, i) => (
-                    <div
-                      key={i}
-                      className={`flex-1 h-3 border border-black ${
-                        i < (stats?.study_streak || 0) % 7 + 1
-                          ? 'bg-orange-500'
-                          : 'bg-gray-200'
-                      }`}
-                      style={{
-                        backgroundColor: i < (stats?.study_streak || 0) % 7 + 1 ? '#ff6b35' : '#e5e7eb'
-                      }}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              {/* Cards Learned Bento */}
-              <div className="bg-white border-4 border-black shadow-lg p-6 hover:shadow-xl transition-all duration-300 group">
-                <div className="flex items-center justify-between mb-4">
-                  <div
-                    className="p-3 text-white shadow-lg border-2 border-black"
-                    style={{ backgroundColor: '#ff6b35' }}
-                  >
-                    <span className="text-2xl">🎓</span>
-                  </div>
-                  <div className="text-right">
-                    <div
-                      className="text-3xl font-bold group-hover:scale-110 transition-transform"
-                      style={{ color: '#ff6b35' }}
-                    >
-                      {stats?.cards_learned || 0}
-                    </div>
-                    <div className="text-sm font-semibold text-gray-600">Mastered</div>
-                  </div>
-                </div>
-                <div className="text-xs font-medium" style={{ color: '#ff6b35' }}>
-                  +{Math.floor((stats?.cards_learned || 0) * 0.1)} this week
-                </div>
-              </div>
-
+              <StatCard
+                icon="🎯"
+                value={dueCards?.length || 0}
+                label="Ready to Study"
+                color="#ff6b35"
+                bgColor="bg-orange-100"
+                progressValue={dueCards?.length || 0}
+                maxProgress={20}
+              />
+              <StatCard
+                icon="🎁"
+                value={newCards?.length || 0}
+                label="New Cards"
+                color="#4ade80"
+                bgColor="bg-green-100"
+                progressValue={newCards?.length || 0}
+                maxProgress={10}
+              />
+              <StatCard
+                icon="🔥"
+                value={stats?.study_streak || 0}
+                label="Day Streak"
+                color="#ff6b35"
+                bgColor=""
+              />
+              <StatCard
+                icon="🎓"
+                value={stats?.cards_learned || 0}
+                label="Mastered"
+                color="#ff6b35"
+                bgColor=""
+                subtitle={`+${Math.floor((stats?.cards_learned || 0) * 0.1)} this week`}
+              />
             </div>
           </div>
 
-          {/* Study Session Bento - Large */}
+          {/* Study Session */}
           <div className="col-span-12 lg:col-span-8">
             <div className="bg-white border-4 border-black shadow-xl overflow-hidden h-full">
-              <div
-                className="p-6 text-white border-b-4 border-black"
-                style={{ backgroundColor: '#ff6b35' }}
-              >
+              <div className="p-6 text-white border-b-4 border-black" style={{ backgroundColor: '#ff6b35' }}>
                 <div className="flex items-center justify-between">
                   <div>
                     <h2 className="text-2xl font-bold mb-2">📚 Study Session</h2>
@@ -573,8 +489,8 @@ export default function StudentDashboard() {
               </div>
               <div className="p-6">
                 <DueCardsSection
-                  newCards={newCards}
-                  dueCards={dueCards}
+                  newCards={newCards || []}
+                  dueCards={dueCards || []}
                   isLoading={false}
                   onStartSession={handleStartStudySession}
                   onRefresh={fetchDashboardData}
@@ -583,13 +499,10 @@ export default function StudentDashboard() {
             </div>
           </div>
 
-          {/* Study Streak Bento - Tall */}
+          {/* Study Streak */}
           <div className="col-span-12 lg:col-span-4">
             <div className="bg-orange-50 border-4 border-black shadow-xl overflow-hidden h-full">
-              <div
-                className="p-6 text-white border-b-4 border-black"
-                style={{ backgroundColor: '#ff6b35' }}
-              >
+              <div className="p-6 text-white border-b-4 border-black" style={{ backgroundColor: '#ff6b35' }}>
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-xl font-bold">🔥 Streak Power</h3>
@@ -604,42 +517,34 @@ export default function StudentDashboard() {
                   longestStreak={stats?.study_streak || 0}
                   totalStudyDays={Math.min(stats?.total_reviews || 0, 100)}
                   weeklyGoal={7}
-                  weeklyProgress={Math.min(stats?.study_streak || 0, 7)}
+                  weeklyProgress={stats?.weekly_progress || [0, 0, 0, 0, 0, 0, 0]}
                   nextReviewDate={stats?.next_review_date}
                 />
               </div>
             </div>
           </div>
 
-          {/* Analytics Bento - Wide */}
+          {/* Analytics */}
           <div className="col-span-12 lg:col-span-8">
             <div className="bg-white border-4 border-black shadow-xl overflow-hidden">
-              <div
-                className="p-6 text-white border-b-4 border-black"
-                style={{ backgroundColor: '#ff6b35' }}
-              >
+              <div className="p-6 text-white border-b-4 border-black" style={{ backgroundColor: '#ff6b35' }}>
                 <div className="flex items-center justify-between">
                   <div>
                     <h2 className="text-2xl font-bold mb-2">📈 Learning Analytics</h2>
                     <p className="text-orange-100">Track your progress and celebrate growth</p>
                   </div>
                   <div className="flex gap-2">
-                    <Button
-                      variant={chartType === 'weekly' ? 'accent' : 'ghost'}
-                      size="sm"
-                      onClick={() => setChartType('weekly')}
-                      className="bg-white/20 text-white border-white/30 hover:bg-white/30"
-                    >
-                      Week
-                    </Button>
-                    <Button
-                      variant={chartType === 'monthly' ? 'accent' : 'ghost'}
-                      size="sm"
-                      onClick={() => setChartType('monthly')}
-                      className="bg-white/20 text-white border-white/30 hover:bg-white/30"
-                    >
-                      Month
-                    </Button>
+                    {['weekly', 'monthly'].map((type) => (
+                      <Button
+                        key={type}
+                        variant={chartType === type ? 'accent' : 'ghost'}
+                        size="sm"
+                        onClick={() => setChartType(type as 'weekly' | 'monthly')}
+                        className="bg-white/20 text-white border-white/30 hover:bg-white/30"
+                      >
+                        {type === 'weekly' ? 'Week' : 'Month'}
+                      </Button>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -654,69 +559,53 @@ export default function StudentDashboard() {
             </div>
           </div>
 
-          {/* Quick Actions & Recent Lessons Bento - Compact */}
+          {/* Recent Lessons & Quick Actions */}
           <div className="col-span-12 lg:col-span-4 space-y-6">
             
-            {/* Recent Lessons Compact Bento */}
+            {/* Recent Lessons */}
             <div className="bg-orange-50 border-4 border-black shadow-xl overflow-hidden">
-              <div
-                className="p-4 text-white border-b-4 border-black"
-                style={{ backgroundColor: '#ff6b35' }}
-              >
+              <div className="p-4 text-white border-b-4 border-black" style={{ backgroundColor: '#ff6b35' }}>
                 <h3 className="text-lg font-bold">📖 Recent Lessons</h3>
                 <p className="text-orange-100 text-sm">Continue your journey</p>
               </div>
               <div className="p-4">
                 <RecentLessonsSection
-                  lessons={recentLessons}
+                  lessons={recentLessons || []}
                   isLoading={false}
                   onStartStudy={handleStartStudySession}
                 />
               </div>
             </div>
 
-            {/* Quick Actions Compact Bento */}
+            {/* Quick Actions */}
             <div className="bg-orange-50 border-4 border-black shadow-xl overflow-hidden">
-              <div
-                className="p-4 text-white border-b-4 border-black"
-                style={{ backgroundColor: '#ff6b35' }}
-              >
+              <div className="p-4 text-white border-b-4 border-black" style={{ backgroundColor: '#ff6b35' }}>
                 <h3 className="text-lg font-bold">⚡ Quick Actions</h3>
                 <p className="text-orange-100 text-sm">Jump to key features</p>
               </div>
               <div className="p-4">
                 <div className="space-y-3">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-full justify-start bg-white border-2 border-black text-gray-800 hover:bg-orange-100 shadow-sm font-medium"
-                    onClick={() => router.push('/progress')}
-                  >
-                    📊 Detailed Progress
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-full justify-start bg-white border-2 border-black text-gray-800 hover:bg-orange-100 shadow-sm font-medium"
-                    onClick={() => router.push('/lessons')}
-                  >
-                    📚 Browse Lessons
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-full justify-start bg-white border-2 border-black text-gray-800 hover:bg-orange-100 shadow-sm font-medium"
-                    onClick={() => router.push('/settings')}
-                  >
-                    ⚙️ Settings
-                  </Button>
+                  {[
+                    { icon: '📊', label: 'Detailed Progress', path: '/progress' },
+                    { icon: '📚', label: 'Browse Lessons', path: '/lessons' },
+                    { icon: '⚙️', label: 'Settings', path: '/settings' }
+                  ].map((action) => (
+                    <Button
+                      key={action.path}
+                      variant="ghost"
+                      size="sm"
+                      className="w-full justify-start bg-white border-2 border-black text-gray-800 hover:bg-orange-100 shadow-sm font-medium"
+                      onClick={() => router.push(action.path)}
+                    >
+                      {action.icon} {action.label}
+                    </Button>
+                  ))}
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Footer Spacer */}
         <div className="mt-12"></div>
       </div>
     </div>

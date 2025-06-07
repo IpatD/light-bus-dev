@@ -13,7 +13,7 @@ interface StudyStreakCardProps {
   longestStreak: number
   totalStudyDays: number
   weeklyGoal: number
-  weeklyProgress: number
+  weeklyProgress: number | number[]  // ENHANCED: Accept either number or array
   nextReviewDate?: string
 }
 
@@ -27,8 +27,24 @@ const StudyStreakCard: React.FC<StudyStreakCardProps> = ({
 }) => {
   const userTimezone = getUserTimezone()
   const streakLevel = getStreakLevel(currentStreak)
-  const progressPercentage = Math.min((weeklyProgress / weeklyGoal) * 100, 100)
-  const isGoalReached = weeklyProgress >= weeklyGoal
+  
+  // FIXED: Calculate weekly progress days from array if needed
+  const calculateWeeklyProgressDays = (progressData: number | number[]): number => {
+    if (typeof progressData === 'number') {
+      return progressData  // Already calculated
+    }
+    
+    if (!Array.isArray(progressData)) {
+      return 0
+    }
+    
+    // Count how many days had reviews (non-zero values)
+    return progressData.filter(dayReviews => Number(dayReviews) > 0).length
+  }
+  
+  const actualWeeklyProgress = calculateWeeklyProgressDays(weeklyProgress)
+  const progressPercentage = Math.min((actualWeeklyProgress / weeklyGoal) * 100, 100)
+  const isGoalReached = actualWeeklyProgress >= weeklyGoal
   
   // FIXED: Use timezone-aware next review date formatting
   const formattedNextReviewDate = nextReviewDate 
@@ -93,12 +109,12 @@ const StudyStreakCard: React.FC<StudyStreakCardProps> = ({
         </div>
       </div>
 
-      {/* Weekly Goal Progress */}
+      {/* Weekly Goal Progress - ENHANCED: Uses calculated progress */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <span className="text-sm font-medium text-neutral-charcoal">Weekly Goal</span>
           <span className="text-sm text-neutral-gray">
-            {weeklyProgress}/{weeklyGoal} days
+            {actualWeeklyProgress}/{weeklyGoal} days
           </span>
         </div>
         
@@ -129,7 +145,7 @@ const StudyStreakCard: React.FC<StudyStreakCardProps> = ({
             </span>
           ) : (
             <span className="text-neutral-gray text-sm">
-              {weeklyGoal - weeklyProgress} more days to reach your goal
+              {weeklyGoal - actualWeeklyProgress} more days to reach your goal
             </span>
           )}
         </div>
@@ -155,7 +171,7 @@ const StudyStreakCard: React.FC<StudyStreakCardProps> = ({
 
       {/* Motivational Messages */}
       <div className="text-center">
-        <MotivationalMessage currentStreak={currentStreak} weeklyProgress={weeklyProgress} />
+        <MotivationalMessage currentStreak={currentStreak} weeklyProgress={actualWeeklyProgress} />
       </div>
 
       {/* Achievement Preview */}
@@ -173,7 +189,7 @@ const StudyStreakCard: React.FC<StudyStreakCardProps> = ({
         </div>
       </div>
 
-      {/* Development Debug Panel */}
+      {/* Development Debug Panel - ENHANCED */}
       {process.env.NODE_ENV === 'development' && (
         <div className="mt-4 pt-4 border-t border-gray-300">
           <details className="text-xs text-gray-500">
@@ -183,7 +199,9 @@ const StudyStreakCard: React.FC<StudyStreakCardProps> = ({
               <p><strong>Current Streak:</strong> {currentStreak}</p>
               <p><strong>Next Review Date (Raw):</strong> {nextReviewDate || 'None'}</p>
               <p><strong>Next Review Date (Formatted):</strong> {formattedNextReviewDate || 'None'}</p>
-              <p><strong>Weekly Progress:</strong> {weeklyProgress}/{weeklyGoal}</p>
+              <p><strong>Weekly Progress (Raw):</strong> {JSON.stringify(weeklyProgress)}</p>
+              <p><strong>Weekly Progress (Calculated):</strong> {actualWeeklyProgress}/{weeklyGoal}</p>
+              <p><strong>Progress Type:</strong> {Array.isArray(weeklyProgress) ? 'Array (backend data)' : 'Number (pre-calculated)'}</p>
             </div>
           </details>
         </div>
