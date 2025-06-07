@@ -10,6 +10,8 @@ import Card from '@/components/ui/Card'
 import Input from '@/components/ui/Input'
 import Modal from '@/components/ui/Modal'
 import ConfirmationModal from '@/components/ui/ConfirmationModal'
+import LessonMediaManager from '@/components/lessons/LessonMediaManager'
+import LessonAudioIndicator from '@/components/lessons/LessonAudioIndicator'
 
 interface LessonParticipant {
   student_id: string
@@ -23,6 +25,7 @@ interface LessonDetailData {
   participants: LessonParticipant[]
   cards: SRCard[]
   pending_cards: SRCard[]
+  audio_count?: number
 }
 
 export default function TeacherLessonDetailPage() {
@@ -41,10 +44,12 @@ export default function TeacherLessonDetailPage() {
   const [showDeleteCardModal, setShowDeleteCardModal] = useState(false)
   const [cardToDelete, setCardToDelete] = useState<string | null>(null)
   const [isDeletingCard, setIsDeletingCard] = useState(false)
+  const [audioCount, setAudioCount] = useState(0)
 
   useEffect(() => {
     if (lessonId) {
       fetchLessonData()
+      loadAudioCount()
     }
   }, [lessonId])
 
@@ -97,6 +102,29 @@ export default function TeacherLessonDetailPage() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const loadAudioCount = async () => {
+    try {
+      const { data, error } = await supabase.rpc('get_lesson_audio_files', {
+        p_lesson_id: lessonId
+      })
+
+      if (error) {
+        console.error('Error loading audio count:', error)
+        return
+      }
+
+      setAudioCount(data?.length || 0)
+    } catch (error) {
+      console.error('Error loading audio count:', error)
+    }
+  }
+
+  const handleMediaChange = async () => {
+    // Reload audio count and lesson data when media changes
+    await loadAudioCount()
+    await fetchLessonData()
   }
 
   const handleAddStudent = async () => {
@@ -315,6 +343,11 @@ export default function TeacherLessonDetailPage() {
             {lesson.duration_minutes && (
               <span>⏱️ {lesson.duration_minutes}min</span>
             )}
+            <LessonAudioIndicator
+              hasAudio={lesson.has_audio || audioCount > 0}
+              audioCount={audioCount}
+              size="sm"
+            />
           </div>
         </div>
 
@@ -322,6 +355,15 @@ export default function TeacherLessonDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column */}
           <div className="lg:col-span-2 space-y-8">
+            {/* Audio Files */}
+            <div data-audio-section>
+              <LessonMediaManager
+                lessonId={lessonId}
+                onMediaChange={handleMediaChange}
+                showTitle={true}
+              />
+            </div>
+
             {/* Students */}
             <Card variant="default" padding="lg">
               <div className="flex items-center justify-between mb-6">
@@ -487,6 +529,16 @@ export default function TeacherLessonDetailPage() {
                     📝 Create Flashcard
                   </Button>
                 </Link>
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start text-left"
+                  onClick={() => {
+                    const audioSection = document.querySelector('[data-audio-section]')
+                    audioSection?.scrollIntoView({ behavior: 'smooth' })
+                  }}
+                >
+                  🎧 Manage Audio Files
+                </Button>
                 <Link href={`/cards/import?lesson_id=${lessonId}`}>
                   <Button variant="ghost" className="w-full justify-start text-left">
                     📋 Import Cards
@@ -559,6 +611,10 @@ export default function TeacherLessonDetailPage() {
                 <div className="flex justify-between">
                   <span className="text-sm text-neutral-gray">Pending Cards</span>
                   <span className="font-medium">{pending_cards.length}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-neutral-gray">Audio Files</span>
+                  <span className="font-medium">{audioCount}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-neutral-gray">Created</span>
