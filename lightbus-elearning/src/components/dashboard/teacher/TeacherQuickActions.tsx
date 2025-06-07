@@ -106,9 +106,8 @@ export default function TeacherQuickActions({ className = '' }: TeacherQuickActi
             
             <Link href={action.href}>
               <Button
-                variant={action.buttonText === '+ Create Card' ? 'white-orange' : 'primary'}
+                variant="primary"
                 size="sm"
-                className={action.buttonText === '+ Create Card' ? '' : "bg-white border-2 border-black text-gray-800 hover:bg-orange-100"}
               >
                 {action.buttonText}
               </Button>
@@ -131,8 +130,7 @@ export default function TeacherQuickActions({ className = '' }: TeacherQuickActi
             <div className="flex items-center space-x-4">
               <Link href="/lessons/create">
                 <Button
-                  variant="secondary"
-                  className="bg-white text-gray-800 hover:bg-orange-100 border-2 border-black"
+                  variant="primary"
                 >
                   Create Lesson
                 </Button>

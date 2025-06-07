@@ -168,10 +168,9 @@ export default function ClassAnalyticsSummary({ className = '' }: ClassAnalytics
           <div className="text-4xl mb-2">⚠️</div>
           <p className="text-red-600 mb-4">{error}</p>
           <Button
-            variant="secondary"
+            variant="primary"
             size="sm"
             onClick={fetchAnalytics}
-            className="bg-white border-2 border-black text-gray-800 hover:bg-orange-100"
           >
             Try Again
           </Button>
@@ -186,9 +185,8 @@ export default function ClassAnalyticsSummary({ className = '' }: ClassAnalytics
     <div className={className}>
       <div className="flex items-center justify-between mb-6">
         <Button
-          variant="ghost"
+          variant="primary"
           size="sm"
-          className="bg-white border-2 border-black text-gray-800 hover:bg-orange-100"
         >
           View Detailed Reports
         </Button>

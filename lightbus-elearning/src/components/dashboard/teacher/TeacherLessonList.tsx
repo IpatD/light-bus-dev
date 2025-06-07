@@ -94,10 +94,9 @@ export default function TeacherLessonList({ className = '' }: TeacherLessonListP
           <div className="text-4xl mb-2">⚠️</div>
           <p className="text-red-600 mb-4">{error}</p>
           <Button
-            variant="secondary"
+            variant="primary"
             size="sm"
             onClick={fetchLessons}
-            className="bg-white border-2 border-black text-gray-800 hover:bg-orange-100"
           >
             Try Again
           </Button>
@@ -113,7 +112,6 @@ export default function TeacherLessonList({ className = '' }: TeacherLessonListP
           <Button
             variant="primary"
             size="sm"
-            className="bg-white border-2 border-black text-gray-800 hover:bg-orange-100"
           >
             + New Lesson
           </Button>
@@ -127,9 +125,8 @@ export default function TeacherLessonList({ className = '' }: TeacherLessonListP
           <p className="text-xs mb-4">Create your first lesson to get started</p>
           <Link href="/lessons/create">
             <Button
-              variant="ghost"
+              variant="primary"
               size="sm"
-              className="bg-white border-2 border-black text-gray-800 hover:bg-orange-100"
             >
               Create First Lesson
             </Button>
@@ -173,9 +170,8 @@ export default function TeacherLessonList({ className = '' }: TeacherLessonListP
                 <div className="flex items-center space-x-2 ml-4">
                   <Link href={`/lessons/${lesson.id}/teacher`}>
                     <Button
-                      variant="ghost"
+                      variant="primary"
                       size="sm"
-                      className="bg-white border-2 border-black text-gray-800 hover:bg-orange-100"
                     >
                       Manage
                     </Button>
@@ -183,9 +179,8 @@ export default function TeacherLessonList({ className = '' }: TeacherLessonListP
                   
                   <Link href={`/lessons/${lesson.id}/teacher/analytics`}>
                     <Button
-                      variant="ghost"
+                      variant="primary"
                       size="sm"
-                      className="bg-white border-2 border-black text-gray-800 hover:bg-orange-100"
                     >
                       Analytics
                     </Button>
@@ -200,9 +195,8 @@ export default function TeacherLessonList({ className = '' }: TeacherLessonListP
             <div className="text-center pt-4">
               <Link href="/dashboard/teacher/lessons">
                 <Button
-                  variant="ghost"
+                  variant="primary"
                   size="sm"
-                  className="bg-white border-2 border-black text-gray-800 hover:bg-orange-100"
                 >
                   View All Lessons ({lessons.length})
                 </Button>
