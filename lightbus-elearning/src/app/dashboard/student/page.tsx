@@ -10,7 +10,7 @@ import ProgressChart from '@/components/dashboard/student/ProgressChart'
 import DueCardsSection from '@/components/dashboard/student/DueCardsSection'
 import StudyStreakCard from '@/components/dashboard/student/StudyStreakCard'
 import RecentLessonsSection from '@/components/dashboard/student/RecentLessonsSection'
-import { getUserTimezone, debugDateComparison } from '@/utils/dateHelpers'
+import { getUserTimezone } from '@/utils/dateHelpers'
 
 interface StudyCard {
   card_id: string
@@ -48,12 +48,11 @@ interface DashboardData {
   recentLessons: LessonProgress[]
 }
 
-// EXTRACTED: Default stats to avoid repetition
 const DEFAULT_STATS: UserStats = {
   total_reviews: 0,
   average_quality: 0.0,
   study_streak: 0,
-  longest_streak: 0,  // FIXED: Added missing longest_streak field
+  longest_streak: 0,
   cards_learned: 0,
   cards_due_today: 0,
   next_review_date: undefined,
@@ -72,27 +71,16 @@ export default function StudentDashboard() {
     fetchDashboardData()
   }, [])
 
-  // REMOVED: calculateLongestStreakFromProgress - moved to StudyStreakCard
-
-  // SIMPLIFIED: Stats processing helper (streak calculations moved to StudyStreakCard)
   const processStatsData = (rawStats: any): UserStats => {
     if (!rawStats) return DEFAULT_STATS
     
-    // DEBUGGING: Log what we actually get from backend
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🔍 Raw backend stats:', rawStats)
-      console.log('🔍 Available fields:', Object.keys(rawStats))
-    }
-    
     const weeklyProgress = rawStats.weekly_progress || [0, 0, 0, 0, 0, 0, 0]
     
-    // REFACTORED: Simplified - no longer calculating longest streak here
-    // StudyStreakCard will handle all streak calculations internally
     const processedStats = {
       total_reviews: Number(rawStats.total_reviews) || 0,
       average_quality: Number(rawStats.average_quality) || 0.0,
       study_streak: Number(rawStats.study_streak) || 0,
-      longest_streak: Number(rawStats.longest_streak) || 0, // Pass through raw value
+      longest_streak: Number(rawStats.longest_streak) || 0,
       cards_learned: Number(rawStats.cards_learned) || 0,
       cards_due_today: Number(rawStats.cards_due_today) || 0,
       next_review_date: rawStats.next_review_date,
@@ -100,27 +88,11 @@ export default function StudentDashboard() {
       monthly_progress: rawStats.monthly_progress || new Array(30).fill(0),
     }
     
-    // SIMPLIFIED: Basic debug logging (detailed streak debugging moved to StudyStreakCard)
-    if (process.env.NODE_ENV === 'development') {
-      console.log('📊 Processed stats (non-streak data):', {
-        total_reviews: processedStats.total_reviews,
-        cards_learned: processedStats.cards_learned,
-        cards_due_today: processedStats.cards_due_today
-      })
-      console.log('🔥 Raw streak data passed to component:', {
-        study_streak: rawStats.study_streak,
-        longest_streak: rawStats.longest_streak,
-        weekly_progress: weeklyProgress
-      })
-    }
-    
     return processedStats
   }
 
-  // EXTRACTED: User stats fetching with fallback
   const fetchUserStats = async (userId: string): Promise<UserStats> => {
     try {
-      // Try timezone-aware function first
       const { data: userStats, error: statsError } = await supabase
         .rpc('get_user_stats_with_timezone', { 
           p_user_id: userId,
@@ -128,23 +100,9 @@ export default function StudentDashboard() {
         })
 
       if (!statsError && userStats?.[0]) {
-        const stats = processStatsData(userStats[0])
-        
-        // Debug in development
-        if (process.env.NODE_ENV === 'development') {
-          console.log('✅ Stats loaded successfully:', {
-            timezone: userTimezone,
-            study_streak: stats.study_streak,
-            longest_streak: stats.longest_streak,  // ADDED: Debug longest streak
-            weekly_progress: stats.weekly_progress,
-          })
-        }
-        
-        return stats
+        return processStatsData(userStats[0])
       }
 
-      // Fallback to regular function
-      console.warn('⚠️ Timezone-aware stats failed, using fallback')
       const { data: fallbackStats, error: fallbackError } = await supabase
         .rpc('get_user_stats', { p_user_id: userId })
       
@@ -154,12 +112,11 @@ export default function StudentDashboard() {
 
       throw new Error('Both stats functions failed')
     } catch (error) {
-      console.error('❌ Error fetching user stats:', error)
+      console.error('Error fetching user stats:', error)
       return DEFAULT_STATS
     }
   }
 
-  // EXTRACTED: Cards separation helper
   const separateCards = (cardsData: any[]): { newCards: StudyCard[], dueCards: StudyCard[] } => {
     const newCards: StudyCard[] = []
     const dueCards: StudyCard[] = []
@@ -175,10 +132,8 @@ export default function StudentDashboard() {
     return { newCards, dueCards }
   }
 
-  // EXTRACTED: Lesson enrichment helper
   const enrichLessonData = async (userId: string, lessonItem: any): Promise<LessonProgress> => {
     try {
-      // Get teacher name and lesson details
       const { data: lesson } = await supabase
         .from('lessons')
         .select(`scheduled_at, teacher_id, profiles!lessons_teacher_id_fkey(name)`)
@@ -197,7 +152,7 @@ export default function StudentDashboard() {
         average_quality: Number(lessonItem.average_quality) || 0,
         progress_percentage: Number(lessonItem.progress_percentage) || 0,
         next_review_date: lessonItem.next_review_date,
-        last_activity: undefined // Simplified - remove complex last review lookup
+        last_activity: undefined
       }
     } catch (error) {
       console.error('Error enriching lesson:', lessonItem.lesson_id, error)
@@ -218,19 +173,16 @@ export default function StudentDashboard() {
     }
   }
 
-  // MAIN: Simplified dashboard data fetching
   const fetchDashboardData = async () => {
     try {
       setIsLoading(true)
       
-      // Get authenticated user
       const { data: { user: authUser }, error: userError } = await supabase.auth.getUser()
       if (userError || !authUser) {
         router.push('/auth/login')
         return
       }
 
-      // Get user profile
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('*')
@@ -248,7 +200,6 @@ export default function StudentDashboard() {
         updated_at: profile.updated_at,
       }
 
-      // Fetch all data in parallel
       const [stats, analyticsData, cardsData, lessonsData] = await Promise.allSettled([
         fetchUserStats(authUser.id),
         
@@ -286,7 +237,6 @@ export default function StudentDashboard() {
           })
       ])
 
-      // Process results
       const userStats = stats.status === 'fulfilled' ? stats.value : DEFAULT_STATS
       const analytics = analyticsData.status === 'fulfilled' ? analyticsData.value : null
       const cards = cardsData.status === 'fulfilled' ? cardsData.value : []
@@ -294,12 +244,10 @@ export default function StudentDashboard() {
 
       const { newCards, dueCards } = separateCards(cards)
       
-      // Enrich lesson data - FIXED: Added explicit type
       const enrichedLessons = await Promise.all(
         lessons.map((lesson: any) => enrichLessonData(authUser.id, lesson))
       )
 
-      // Update state
       setDashboardData({
         user: userData,
         stats: userStats,
@@ -311,7 +259,6 @@ export default function StudentDashboard() {
 
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
-      // Set fallback data
       setDashboardData({
         stats: DEFAULT_STATS,
         newCards: [],
@@ -327,7 +274,6 @@ export default function StudentDashboard() {
     router.push(lessonId ? `/study/${lessonId}` : '/study/all')
   }
 
-  // EXTRACTED: Stat card component to reduce JSX repetition
   const StatCard = ({ 
     icon, 
     value, 
@@ -373,7 +319,7 @@ export default function StudentDashboard() {
         <div className="text-xs font-medium" style={{ color }}>
           {subtitle}
         </div>
-      ) : null /* REMOVED: Streak visualization logic - moved to StudyStreakCard */}
+      ) : null}
     </div>
   )
 
@@ -419,26 +365,6 @@ export default function StudentDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Development Debug Panel - REFACTORED: Simplified after moving streak calculations */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="bg-yellow-50 border-b border-yellow-200 p-2">
-          <details className="text-xs">
-            <summary className="cursor-pointer text-yellow-800">🔧 Debug: Dashboard Data (Refactored)</summary>
-            <div className="mt-2 text-yellow-700">
-              <p><strong>Timezone:</strong> {userTimezone}</p>
-              <p><strong>Cards:</strong> {dueCards?.length || 0} due, {newCards?.length || 0} new</p>
-              <p><strong>Raw Streak Data Passed to Component:</strong></p>
-              <div className="ml-4">
-                <p>• Current Streak: {stats?.study_streak || 0}</p>
-                <p>• Longest Streak (raw): {stats?.longest_streak || 0}</p>
-                <p>• Weekly Progress: {JSON.stringify(stats?.weekly_progress)}</p>
-              </div>
-              <p><strong>Note:</strong> All streak calculations now handled by StudyStreakCard component</p>
-            </div>
-          </details>
-        </div>
-      )}
-
       <div className="container mx-auto px-6 py-8 max-w-7xl">
         
         {/* Welcome Hero */}
@@ -523,7 +449,7 @@ export default function StudentDashboard() {
             </div>
           </div>
 
-          {/* Study Streak - FIXED: Now uses calculated longest_streak */}
+          {/* Study Streak */}
           <div className="col-span-12 lg:col-span-4">
             <div className="bg-orange-50 border-4 border-black shadow-xl overflow-hidden h-full">
               <div className="p-6 text-white border-b-4 border-black" style={{ backgroundColor: '#ff6b35' }}>
@@ -536,7 +462,6 @@ export default function StudentDashboard() {
                 </div>
               </div>
               <div className="p-6">
-                {/* REFACTORED: Pass raw stats to component instead of processed values */}
                 <StudyStreakCard
                   rawStats={{
                     study_streak: stats?.study_streak,

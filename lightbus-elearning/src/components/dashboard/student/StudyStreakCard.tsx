@@ -4,8 +4,8 @@ import React from 'react'
 import { Flame, Calendar, Trophy, Target, TrendingUp, Award } from 'lucide-react'
 import { 
   formatNextReviewDate, 
-  getUserTimezone, 
-  debugDateComparison 
+  getUserTimezone,
+  mapReviewDataToChart
 } from '@/utils/dateHelpers'
 
 interface StudyStreakCardProps {
@@ -101,21 +101,17 @@ const StudyStreakCard: React.FC<StudyStreakCardProps> = ({
   
   const streakLevel = getStreakLevel(currentStreak)
   
-  // FIXED: Calculate weekly progress days from array if needed
-  const calculateWeeklyProgressDays = (progressData: number | number[]): number => {
-    if (typeof progressData === 'number') {
-      return progressData  // Already calculated
-    }
-    
-    if (!Array.isArray(progressData)) {
-      return 0
-    }
-    
-    // Count how many days had reviews (non-zero values)
-    return progressData.filter(dayReviews => Number(dayReviews) > 0).length
+  // FIXED: Use timezone-aware date mapping for weekly progress (same as ProgressChart)
+  const weeklyChartData = Array.isArray(weeklyProgress) 
+    ? mapReviewDataToChart(weeklyProgress, 'weekly', userTimezone)
+    : []
+  
+  // FIXED: Calculate weekly progress days from properly mapped data
+  const calculateWeeklyProgressDays = (chartData: any[]): number => {
+    return chartData.filter(dayData => Number(dayData.reviews) > 0).length
   }
   
-  const actualWeeklyProgress = calculateWeeklyProgressDays(weeklyProgress)
+  const actualWeeklyProgress = calculateWeeklyProgressDays(weeklyChartData)
   const progressPercentage = Math.min((actualWeeklyProgress / weeklyGoal) * 100, 100)
   const isGoalReached = actualWeeklyProgress >= weeklyGoal
   
@@ -128,17 +124,6 @@ const StudyStreakCard: React.FC<StudyStreakCardProps> = ({
     ? formatNextReviewDate(nextReviewDate, userTimezone)
     : null
 
-  // ADDED: Debug logging for streak calculations (moved from dashboard)
-  if (process.env.NODE_ENV === 'development') {
-    console.log('🔥 StudyStreakCard - Streak calculation:', {
-      currentStreak,
-      longestStreak,
-      calculatedFromWeekly: calculateLongestStreakFromProgress(Array.isArray(weeklyProgress) ? weeklyProgress : []),
-      weeklyPattern: weeklyProgress,
-      rawStats: rawStats || 'Using legacy props'
-    })
-  }
-  
   return (
     <div className="space-y-6">
       {/* Header with Level Badge */}
@@ -201,8 +186,8 @@ const StudyStreakCard: React.FC<StudyStreakCardProps> = ({
         </div>
       </div>
 
-      {/* ENHANCED: Streak Progress Visualization */}
-      {Array.isArray(weeklyProgress) && (
+      {/* FIXED: Timezone-aware Streak Progress Visualization */}
+      {weeklyChartData.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-neutral-charcoal">This Week</span>
@@ -211,29 +196,32 @@ const StudyStreakCard: React.FC<StudyStreakCardProps> = ({
             </span>
           </div>
           
-          {/* Visual Week Progress */}
+          {/* FIXED: Visual Week Progress using timezone-aware mapping */}
           <div className="flex space-x-1">
-            {weeklyProgress.map((dayReviews, index) => {
-              const hasActivity = Number(dayReviews) > 0
-              const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+            {weeklyChartData.map((dayData, index) => {
+              const hasActivity = Number(dayData.reviews) > 0
+              const isToday = dayData.isToday
               return (
                 <div key={index} className="flex-1 text-center">
                   <div
-                    className={`h-8 border border-gray-300 rounded transition-all duration-300 ${
+                    className={`h-8 border-2 transition-all duration-300 relative ${
                       hasActivity 
                         ? 'bg-orange-500 border-orange-600' 
                         : 'bg-gray-100 border-gray-200'
-                    }`}
-                    title={`${dayNames[index]}: ${dayReviews} reviews`}
+                    } ${isToday ? 'border-orange-500' : ''}`}
+                    title={`${dayData.day}: ${dayData.reviews} reviews${isToday ? ' (Today)' : ''}`}
                   >
                     {hasActivity && (
                       <div className="text-white text-xs pt-1 font-bold">
-                        {dayReviews}
+                        {dayData.reviews}
                       </div>
                     )}
+                    {isToday && !hasActivity && (
+                      <div className="h-full bg-orange-50"></div>
+                    )}
                   </div>
-                  <div className="text-xs text-gray-500 mt-1">
-                    {dayNames[index]}
+                  <div className={`text-xs mt-1 ${isToday ? 'text-orange-600 font-bold' : 'text-gray-500'}`}>
+                    {dayData.day}
                   </div>
                 </div>
               )
@@ -308,12 +296,6 @@ const StudyStreakCard: React.FC<StudyStreakCardProps> = ({
               Next review: {formattedNextReviewDate}
             </span>
           </div>
-          {/* Debug info in development */}
-          {process.env.NODE_ENV === 'development' && nextReviewDate && (
-            <div className="mt-1 text-xs text-gray-400">
-              Debug: {JSON.stringify(debugDateComparison(nextReviewDate, userTimezone))}
-            </div>
-          )}
         </div>
       )}
 
@@ -340,30 +322,6 @@ const StudyStreakCard: React.FC<StudyStreakCardProps> = ({
           ))}
         </div>
       </div>
-
-      {/* Development Debug Panel - ENHANCED with refactored info */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="mt-4 pt-4 border-t border-gray-300">
-          <details className="text-xs text-gray-500">
-            <summary className="cursor-pointer">Debug: Streak Card Info (Refactored)</summary>
-            <div className="mt-2 p-2 bg-gray-100 rounded">
-              <p><strong>Data Source:</strong> {rawStats ? 'Raw Stats (Refactored)' : 'Legacy Props'}</p>
-              <p><strong>User Timezone:</strong> {userTimezone}</p>
-              <p><strong>Current Streak:</strong> {currentStreak}</p>
-              <p><strong>Longest Streak (Calculated):</strong> {longestStreak}</p>
-              <p><strong>Longest from Weekly:</strong> {calculateLongestStreakFromProgress(Array.isArray(weeklyProgress) ? weeklyProgress : [])}</p>
-              <p><strong>Raw Stats:</strong> {rawStats ? JSON.stringify(rawStats) : 'None'}</p>
-              <p><strong>Next Review Date (Raw):</strong> {nextReviewDate || 'None'}</p>
-              <p><strong>Next Review Date (Formatted):</strong> {formattedNextReviewDate || 'None'}</p>
-              <p><strong>Weekly Progress (Raw):</strong> {JSON.stringify(weeklyProgress)}</p>
-              <p><strong>Weekly Progress (Calculated):</strong> {actualWeeklyProgress}/{weeklyGoal}</p>
-              <p><strong>Progress Type:</strong> {Array.isArray(weeklyProgress) ? 'Array (backend data)' : 'Number (pre-calculated)'}</p>
-              <p><strong>Streak Analysis:</strong> {JSON.stringify(streakAnalysis)}</p>
-              <p><strong>Component Self-Contained:</strong> ✅ All streak calculations moved here</p>
-            </div>
-          </details>
-        </div>
-      )}
     </div>
   )
 }
