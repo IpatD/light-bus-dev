@@ -156,6 +156,7 @@ export interface UserStats {
   total_reviews: number
   average_quality: number
   study_streak: number
+  longest_streak: number        // ADDED: Track the best streak ever achieved
   cards_learned: number
   cards_due_today: number
   next_review_date?: string

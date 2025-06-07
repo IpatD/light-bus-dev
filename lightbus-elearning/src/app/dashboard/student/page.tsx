@@ -53,6 +53,7 @@ const DEFAULT_STATS: UserStats = {
   total_reviews: 0,
   average_quality: 0.0,
   study_streak: 0,
+  longest_streak: 0,  // FIXED: Added missing longest_streak field
   cards_learned: 0,
   cards_due_today: 0,
   next_review_date: undefined,
@@ -71,20 +72,49 @@ export default function StudentDashboard() {
     fetchDashboardData()
   }, [])
 
-  // EXTRACTED: Stats processing helper
+  // REMOVED: calculateLongestStreakFromProgress - moved to StudyStreakCard
+
+  // SIMPLIFIED: Stats processing helper (streak calculations moved to StudyStreakCard)
   const processStatsData = (rawStats: any): UserStats => {
     if (!rawStats) return DEFAULT_STATS
     
-    return {
+    // DEBUGGING: Log what we actually get from backend
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 Raw backend stats:', rawStats)
+      console.log('🔍 Available fields:', Object.keys(rawStats))
+    }
+    
+    const weeklyProgress = rawStats.weekly_progress || [0, 0, 0, 0, 0, 0, 0]
+    
+    // REFACTORED: Simplified - no longer calculating longest streak here
+    // StudyStreakCard will handle all streak calculations internally
+    const processedStats = {
       total_reviews: Number(rawStats.total_reviews) || 0,
       average_quality: Number(rawStats.average_quality) || 0.0,
       study_streak: Number(rawStats.study_streak) || 0,
+      longest_streak: Number(rawStats.longest_streak) || 0, // Pass through raw value
       cards_learned: Number(rawStats.cards_learned) || 0,
       cards_due_today: Number(rawStats.cards_due_today) || 0,
       next_review_date: rawStats.next_review_date,
-      weekly_progress: rawStats.weekly_progress || [0, 0, 0, 0, 0, 0, 0],
+      weekly_progress: weeklyProgress,
       monthly_progress: rawStats.monthly_progress || new Array(30).fill(0),
     }
+    
+    // SIMPLIFIED: Basic debug logging (detailed streak debugging moved to StudyStreakCard)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('📊 Processed stats (non-streak data):', {
+        total_reviews: processedStats.total_reviews,
+        cards_learned: processedStats.cards_learned,
+        cards_due_today: processedStats.cards_due_today
+      })
+      console.log('🔥 Raw streak data passed to component:', {
+        study_streak: rawStats.study_streak,
+        longest_streak: rawStats.longest_streak,
+        weekly_progress: weeklyProgress
+      })
+    }
+    
+    return processedStats
   }
 
   // EXTRACTED: User stats fetching with fallback
@@ -102,9 +132,10 @@ export default function StudentDashboard() {
         
         // Debug in development
         if (process.env.NODE_ENV === 'development') {
-          console.log('Stats loaded:', {
+          console.log('✅ Stats loaded successfully:', {
             timezone: userTimezone,
             study_streak: stats.study_streak,
+            longest_streak: stats.longest_streak,  // ADDED: Debug longest streak
             weekly_progress: stats.weekly_progress,
           })
         }
@@ -113,7 +144,7 @@ export default function StudentDashboard() {
       }
 
       // Fallback to regular function
-      console.warn('Timezone-aware stats failed, using fallback')
+      console.warn('⚠️ Timezone-aware stats failed, using fallback')
       const { data: fallbackStats, error: fallbackError } = await supabase
         .rpc('get_user_stats', { p_user_id: userId })
       
@@ -123,7 +154,7 @@ export default function StudentDashboard() {
 
       throw new Error('Both stats functions failed')
     } catch (error) {
-      console.error('Error fetching user stats:', error)
+      console.error('❌ Error fetching user stats:', error)
       return DEFAULT_STATS
     }
   }
@@ -342,19 +373,7 @@ export default function StudentDashboard() {
         <div className="text-xs font-medium" style={{ color }}>
           {subtitle}
         </div>
-      ) : (
-        <div className="flex space-x-1">
-          {[...Array(7)].map((_, i) => (
-            <div
-              key={i}
-              className="flex-1 h-3 border border-black"
-              style={{
-                backgroundColor: i < (value % 7) + 1 ? color : '#e5e7eb'
-              }}
-            />
-          ))}
-        </div>
-      )}
+      ) : null /* REMOVED: Streak visualization logic - moved to StudyStreakCard */}
     </div>
   )
 
@@ -400,16 +419,21 @@ export default function StudentDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Development Debug Panel */}
+      {/* Development Debug Panel - REFACTORED: Simplified after moving streak calculations */}
       {process.env.NODE_ENV === 'development' && (
         <div className="bg-yellow-50 border-b border-yellow-200 p-2">
           <details className="text-xs">
-            <summary className="cursor-pointer text-yellow-800">🔧 Debug: Dashboard Data</summary>
+            <summary className="cursor-pointer text-yellow-800">🔧 Debug: Dashboard Data (Refactored)</summary>
             <div className="mt-2 text-yellow-700">
               <p><strong>Timezone:</strong> {userTimezone}</p>
               <p><strong>Cards:</strong> {dueCards?.length || 0} due, {newCards?.length || 0} new</p>
-              <p><strong>Streak:</strong> {stats?.study_streak || 0}</p>
-              <p><strong>Weekly Progress:</strong> {JSON.stringify(stats?.weekly_progress)}</p>
+              <p><strong>Raw Streak Data Passed to Component:</strong></p>
+              <div className="ml-4">
+                <p>• Current Streak: {stats?.study_streak || 0}</p>
+                <p>• Longest Streak (raw): {stats?.longest_streak || 0}</p>
+                <p>• Weekly Progress: {JSON.stringify(stats?.weekly_progress)}</p>
+              </div>
+              <p><strong>Note:</strong> All streak calculations now handled by StudyStreakCard component</p>
             </div>
           </details>
         </div>
@@ -499,7 +523,7 @@ export default function StudentDashboard() {
             </div>
           </div>
 
-          {/* Study Streak */}
+          {/* Study Streak - FIXED: Now uses calculated longest_streak */}
           <div className="col-span-12 lg:col-span-4">
             <div className="bg-orange-50 border-4 border-black shadow-xl overflow-hidden h-full">
               <div className="p-6 text-white border-b-4 border-black" style={{ backgroundColor: '#ff6b35' }}>
@@ -512,13 +536,16 @@ export default function StudentDashboard() {
                 </div>
               </div>
               <div className="p-6">
+                {/* REFACTORED: Pass raw stats to component instead of processed values */}
                 <StudyStreakCard
-                  currentStreak={stats?.study_streak || 0}
-                  longestStreak={stats?.study_streak || 0}
-                  totalStudyDays={Math.min(stats?.total_reviews || 0, 100)}
+                  rawStats={{
+                    study_streak: stats?.study_streak,
+                    longest_streak: stats?.longest_streak,
+                    total_reviews: stats?.total_reviews,
+                    weekly_progress: stats?.weekly_progress,
+                    next_review_date: stats?.next_review_date
+                  }}
                   weeklyGoal={7}
-                  weeklyProgress={stats?.weekly_progress || [0, 0, 0, 0, 0, 0, 0]}
-                  nextReviewDate={stats?.next_review_date}
                 />
               </div>
             </div>
