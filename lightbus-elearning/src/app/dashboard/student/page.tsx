@@ -10,6 +10,7 @@ import ProgressChart from '@/components/dashboard/student/ProgressChart'
 import DueCardsSection from '@/components/dashboard/student/DueCardsSection'
 import StudyStreakCard from '@/components/dashboard/student/StudyStreakCard'
 import RecentLessonsSection from '@/components/dashboard/student/RecentLessonsSection'
+import { getUserTimezone, getTimezoneParams, debugDateComparison } from '@/utils/dateHelpers'
 
 interface StudyCard {
   card_id: string
@@ -49,6 +50,10 @@ export default function StudentDashboard() {
   const [isLoading, setIsLoading] = useState(true)
   const [chartType, setChartType] = useState<'weekly' | 'monthly'>('weekly')
 
+  // FIXED: Get user timezone for consistent backend calls
+  const userTimezone = getUserTimezone()
+  const timezoneParams = getTimezoneParams()
+
   useEffect(() => {
     fetchDashboardData()
   }, [])
@@ -83,17 +88,36 @@ export default function StudentDashboard() {
       }
       setUser(userData)
 
-      // Get comprehensive user statistics with improved error handling
+      // FIXED: Get timezone-aware user statistics
       try {
         const { data: userStats, error: statsError } = await supabase
-          .rpc('get_user_stats', { p_user_id: authUser.id })
+          .rpc('get_user_stats_with_timezone', { 
+            p_user_id: authUser.id,
+            p_client_timezone: userTimezone
+          })
 
         if (statsError) {
-          console.error('Error fetching user stats:', statsError)
-          throw statsError
-        }
-
-        if (userStats && userStats.length > 0) {
+          console.error('Error fetching timezone-aware user stats:', statsError)
+          // Fallback to regular function if timezone version fails
+          const { data: fallbackStats, error: fallbackError } = await supabase
+            .rpc('get_user_stats', { p_user_id: authUser.id })
+          
+          if (fallbackError) throw fallbackError
+          
+          if (fallbackStats && fallbackStats.length > 0) {
+            const stats = fallbackStats[0]
+            setStats({
+              total_reviews: Number(stats.total_reviews) || 0,
+              average_quality: Number(stats.average_quality) || 0.0,
+              study_streak: Number(stats.study_streak) || 0,
+              cards_learned: Number(stats.cards_learned) || 0,
+              cards_due_today: Number(stats.cards_due_today) || 0,
+              next_review_date: stats.next_review_date,
+              weekly_progress: stats.weekly_progress || [0, 0, 0, 0, 0, 0, 0],
+              monthly_progress: stats.monthly_progress || new Array(30).fill(0),
+            })
+          }
+        } else if (userStats && userStats.length > 0) {
           const stats = userStats[0]
           setStats({
             total_reviews: Number(stats.total_reviews) || 0,
@@ -105,6 +129,17 @@ export default function StudentDashboard() {
             weekly_progress: stats.weekly_progress || [0, 0, 0, 0, 0, 0, 0],
             monthly_progress: stats.monthly_progress || new Array(30).fill(0),
           })
+
+          // Debug timezone-aware stats in development
+          if (process.env.NODE_ENV === 'development') {
+            console.log('Timezone-aware stats loaded:', {
+              timezone: userTimezone,
+              study_streak: stats.study_streak,
+              cards_due_today: stats.cards_due_today,
+              next_review_date: stats.next_review_date,
+              next_review_debug: stats.next_review_date ? debugDateComparison(stats.next_review_date + 'T00:00:00Z', userTimezone) : null
+            })
+          }
         } else {
           // No stats data found - use defaults
           setStats({
@@ -148,7 +183,11 @@ export default function StudentDashboard() {
             lessons_participated: 0,
             cards_added: 0,
             cards_studied: 0,
-            current_month_name: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+            current_month_name: new Date().toLocaleDateString('en-US', { 
+              month: 'long', 
+              year: 'numeric',
+              timeZone: userTimezone
+            })
           })
         }
       } catch (analyticsError) {
@@ -185,6 +224,19 @@ export default function StudentDashboard() {
 
           setNewCards(newCardsArray)
           setDueCards(dueCardsArray)
+
+          // Debug cards data in development
+          if (process.env.NODE_ENV === 'development') {
+            console.log('Cards loaded:', {
+              timezone: userTimezone,
+              new_cards: newCardsArray.length,
+              due_cards: dueCardsArray.length,
+              sample_due_card: dueCardsArray[0] ? {
+                scheduled_for: dueCardsArray[0].scheduled_for,
+                scheduled_debug: debugDateComparison(dueCardsArray[0].scheduled_for, userTimezone)
+              } : null
+            })
+          }
         } else {
           setNewCards([])
           setDueCards([])
@@ -338,6 +390,21 @@ export default function StudentDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Development Debug Panel */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="bg-yellow-50 border-b border-yellow-200 p-2">
+          <details className="text-xs">
+            <summary className="cursor-pointer text-yellow-800">🔧 Debug: Timezone & Date Info</summary>
+            <div className="mt-2 text-yellow-700">
+              <p><strong>User Timezone:</strong> {userTimezone}</p>
+              <p><strong>Cards Due:</strong> {dueCards.length} | <strong>New Cards:</strong> {newCards.length}</p>
+              <p><strong>Study Streak:</strong> {stats?.study_streak || 0}</p>
+              <p><strong>Next Review:</strong> {stats?.next_review_date || 'None'}</p>
+            </div>
+          </details>
+        </div>
+      )}
+
       {/* Main Dashboard Container with Bento Layout */}
       <div className="container mx-auto px-6 py-8 max-w-7xl">
         

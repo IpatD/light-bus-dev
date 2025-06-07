@@ -6,6 +6,7 @@ import { Clock, CheckCircle2, Play, Plus, Star, Gift, TrendingUp, Timer, Target,
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 import { supabase } from '@/lib/supabase'
+import { getUserTimezone, getTimezoneParams, debugDateComparison } from '@/utils/dateHelpers'
 
 interface StudyCard {
   card_id: string
@@ -48,6 +49,10 @@ const DueCardsSection: React.FC<DueCardsSectionProps> = ({
   const [todayStats, setTodayStats] = useState<TodayStats | null>(null)
   const [statsLoading, setStatsLoading] = useState(false)
 
+  // FIXED: Get user timezone for consistent backend calls
+  const userTimezone = getUserTimezone()
+  const timezoneParams = getTimezoneParams()
+
   // Fetch today's study statistics
   useEffect(() => {
     fetchTodayStats()
@@ -59,13 +64,37 @@ const DueCardsSection: React.FC<DueCardsSectionProps> = ({
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
+      // FIXED: Use timezone-aware function for today's statistics
       const { data, error } = await supabase
-        .rpc('get_today_study_stats', { p_user_id: user.id })
+        .rpc('get_today_study_stats_with_timezone', { 
+          p_user_id: user.id,
+          p_client_timezone: userTimezone
+        })
 
-      if (error) throw error
-
-      if (data && data.length > 0) {
+      if (error) {
+        console.error('Error fetching timezone-aware today stats:', error)
+        // Fallback to regular function if timezone version fails
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .rpc('get_today_study_stats', { p_user_id: user.id })
+        
+        if (fallbackError) throw fallbackError
+        
+        if (fallbackData && fallbackData.length > 0) {
+          setTodayStats(fallbackData[0])
+        }
+      } else if (data && data.length > 0) {
         setTodayStats(data[0])
+        
+        // Debug timezone-aware stats in development
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Timezone-aware today stats loaded:', {
+            timezone: userTimezone,
+            cards_studied_today: data[0].cards_studied_today,
+            total_cards_ready: data[0].total_cards_ready,
+            study_time_minutes: data[0].study_time_minutes,
+            cards_mastered_today: data[0].cards_mastered_today
+          })
+        }
       }
     } catch (error) {
       console.error('Error fetching today stats:', error)
@@ -144,6 +173,22 @@ const DueCardsSection: React.FC<DueCardsSectionProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* Development Debug Panel */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="bg-blue-50 border border-blue-200 p-2 rounded">
+          <details className="text-xs text-blue-800">
+            <summary className="cursor-pointer">🔧 Debug: Due Cards Section</summary>
+            <div className="mt-2">
+              <p><strong>User Timezone:</strong> {userTimezone}</p>
+              <p><strong>New Cards:</strong> {newCards.length}</p>
+              <p><strong>Due Cards:</strong> {dueCards.length}</p>
+              <p><strong>Today Stats Loading:</strong> {statsLoading ? 'Yes' : 'No'}</p>
+              <p><strong>Today Stats:</strong> {todayStats ? JSON.stringify(todayStats) : 'None'}</p>
+            </div>
+          </details>
+        </div>
+      )}
+
       {/* New Cards Section */}
       {newCards.length > 0 && (
         <div>
@@ -257,12 +302,16 @@ const DueCardsSection: React.FC<DueCardsSectionProps> = ({
           </div>
         ) : (
           <>
-            {/* Today's Study Statistics */}
+            {/* FIXED: Today's Study Statistics with timezone awareness */}
             {todayStats && (
               <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-green-50 border border-green-200 rounded-lg">
                 <h4 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
                   <TrendingUp size={20} className="text-green-600" />
                   Today's Progress
+                  {/* Debug timezone info in development */}
+                  {process.env.NODE_ENV === 'development' && (
+                    <span className="text-xs text-gray-500">({userTimezone})</span>
+                  )}
                 </h4>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="text-center">
@@ -435,6 +484,7 @@ const DueCardsGroup: React.FC<DueCardsGroupProps> = ({
   onStartSession
 }) => {
   const averageDifficulty = cards.reduce((sum, card) => sum + card.difficulty_level, 0) / cards.length
+  const userTimezone = getUserTimezone()
 
   return (
     <div className="border border-green-200 bg-green-50 p-4">
@@ -473,6 +523,12 @@ const DueCardsGroup: React.FC<DueCardsGroupProps> = ({
             <div className="flex items-center gap-2 text-xs text-green-600">
               <span>Difficulty {card.difficulty_level}/5</span>
               <Star size={14} className="text-green-500" />
+              {/* Debug scheduled date in development */}
+              {process.env.NODE_ENV === 'development' && (
+                <span className="text-gray-400">
+                  {debugDateComparison(card.scheduled_for, userTimezone).local_date}
+                </span>
+              )}
             </div>
           </div>
         ))}

@@ -164,7 +164,7 @@ export default function StudyAllSessionPage() {
       })
 
       const { data, error } = await supabase
-        .rpc('record_sr_review', {
+        .rpc('record_sr_review_fixed', {
           p_user_id: user.id,
           p_card_id: currentCard.id,
           p_quality: quality,

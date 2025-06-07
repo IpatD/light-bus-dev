@@ -2,6 +2,11 @@
 
 import React from 'react'
 import { Flame, Calendar, Trophy, Target } from 'lucide-react'
+import { 
+  formatNextReviewDate, 
+  getUserTimezone, 
+  debugDateComparison 
+} from '@/utils/dateHelpers'
 
 interface StudyStreakCardProps {
   currentStreak: number
@@ -20,9 +25,15 @@ const StudyStreakCard: React.FC<StudyStreakCardProps> = ({
   weeklyProgress,
   nextReviewDate
 }) => {
+  const userTimezone = getUserTimezone()
   const streakLevel = getStreakLevel(currentStreak)
   const progressPercentage = Math.min((weeklyProgress / weeklyGoal) * 100, 100)
   const isGoalReached = weeklyProgress >= weeklyGoal
+  
+  // FIXED: Use timezone-aware next review date formatting
+  const formattedNextReviewDate = nextReviewDate 
+    ? formatNextReviewDate(nextReviewDate, userTimezone)
+    : null
   
   return (
     <div className="space-y-6">
@@ -124,15 +135,21 @@ const StudyStreakCard: React.FC<StudyStreakCardProps> = ({
         </div>
       </div>
 
-      {/* Next Review Info */}
-      {nextReviewDate && (
+      {/* Next Review Info - FIXED: Timezone-aware date display */}
+      {formattedNextReviewDate && (
         <div className="p-3 bg-learning-50 border-l-4 border-learning-500 rounded">
           <div className="flex items-center gap-2 text-sm">
             <Calendar size={16} className="text-learning-600" />
             <span className="text-learning-700">
-              Next review: {formatNextReviewDate(nextReviewDate)}
+              Next review: {formattedNextReviewDate}
             </span>
           </div>
+          {/* Debug info in development */}
+          {process.env.NODE_ENV === 'development' && nextReviewDate && (
+            <div className="mt-1 text-xs text-gray-400">
+              Debug: {JSON.stringify(debugDateComparison(nextReviewDate, userTimezone))}
+            </div>
+          )}
         </div>
       )}
 
@@ -155,6 +172,22 @@ const StudyStreakCard: React.FC<StudyStreakCardProps> = ({
           ))}
         </div>
       </div>
+
+      {/* Development Debug Panel */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="mt-4 pt-4 border-t border-gray-300">
+          <details className="text-xs text-gray-500">
+            <summary className="cursor-pointer">Debug: Streak Card Info</summary>
+            <div className="mt-2 p-2 bg-gray-100 rounded">
+              <p><strong>User Timezone:</strong> {userTimezone}</p>
+              <p><strong>Current Streak:</strong> {currentStreak}</p>
+              <p><strong>Next Review Date (Raw):</strong> {nextReviewDate || 'None'}</p>
+              <p><strong>Next Review Date (Formatted):</strong> {formattedNextReviewDate || 'None'}</p>
+              <p><strong>Weekly Progress:</strong> {weeklyProgress}/{weeklyGoal}</p>
+            </div>
+          </details>
+        </div>
+      )}
     </div>
   )
 }
@@ -238,25 +271,6 @@ function getFlameAnimation(streak: number): string {
   if (streak < 3) return 'animate-pulse'
   if (streak < 7) return 'animate-bounce'
   return 'animate-pulse'
-}
-
-function formatNextReviewDate(dateString: string): string {
-  const date = new Date(dateString)
-  const today = new Date()
-  const tomorrow = new Date(today)
-  tomorrow.setDate(tomorrow.getDate() + 1)
-
-  if (date.toDateString() === today.toDateString()) {
-    return 'Today'
-  } else if (date.toDateString() === tomorrow.toDateString()) {
-    return 'Tomorrow'
-  } else {
-    return date.toLocaleDateString('en-US', { 
-      weekday: 'short', 
-      month: 'short', 
-      day: 'numeric' 
-    })
-  }
 }
 
 function getUpcomingAchievements(currentStreak: number): Array<{ name: string; daysLeft: number }> {

@@ -2,6 +2,14 @@
 
 import React from 'react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, ComposedChart, Bar } from 'recharts'
+import { 
+  mapReviewDataToChart, 
+  getUserTimezone, 
+  isToday,
+  formatDisplayDate,
+  debugDateComparison,
+  debugWeeklyProgressMapping 
+} from '@/utils/dateHelpers'
 
 interface ProgressChartProps {
   weeklyData: number[]
@@ -23,38 +31,17 @@ const ProgressChart: React.FC<ProgressChartProps> = ({
   type = 'weekly',
   analyticsData 
 }) => {
-  // Prepare weekly data with enhanced analytics
-  const weeklyChartData = weeklyData.map((value, index) => {
-    const date = new Date()
-    date.setDate(date.getDate() - (6 - index))
-    const isToday = date.toDateString() === new Date().toDateString()
-    
-    return {
-      day: date.toLocaleDateString('en-US', { weekday: 'short' }),
-      reviews: value,
-      date: date.toISOString().split('T')[0],
-      isToday: isToday
-    }
-  })
+  const userTimezone = getUserTimezone()
+  
+  // FIXED: Use timezone-aware date mapping with proper backend array handling
+  const chartData = type === 'weekly' 
+    ? mapReviewDataToChart(weeklyData, 'weekly', userTimezone)
+    : mapReviewDataToChart(monthlyData, 'monthly', userTimezone)
 
-  // Prepare monthly data with enhanced analytics
-  const monthlyChartData = monthlyData.map((value, index) => {
-    const startOfMonth = new Date()
-    startOfMonth.setDate(1)
-    const date = new Date(startOfMonth)
-    date.setDate(index + 1)
-    const isToday = date.toDateString() === new Date().toDateString()
-    
-    return {
-      day: `${date.getDate()}`,
-      reviews: value,
-      date: date.toISOString().split('T')[0],
-      month: date.toLocaleDateString('en-US', { month: 'short' }),
-      isToday: isToday
-    }
-  })
-
-  const chartData = type === 'weekly' ? weeklyChartData : monthlyChartData
+  // Debug weekly progress mapping in development
+  if (process.env.NODE_ENV === 'development' && type === 'weekly' && weeklyData.length > 0) {
+    debugWeeklyProgressMapping(weeklyData, userTimezone);
+  }
 
   // Calculate meaningful statistics
   const totalReviews = chartData.reduce((sum, day) => sum + day.reviews, 0)
@@ -63,9 +50,16 @@ const ProgressChart: React.FC<ProgressChartProps> = ({
   const maxReviews = Math.max(...chartData.map(d => d.reviews))
   const currentStreak = calculateStreak(chartData)
 
+  // FIXED: Timezone-aware tooltip with proper date handling
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload
+      
+      // Debug date alignment if needed (can be removed in production)
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Tooltip date debug:', debugDateComparison(data.date + 'T00:00:00Z', userTimezone))
+      }
+      
       return (
         <div className="bg-white p-4 border border-gray-300 shadow-lg rounded-lg">
           <p className="font-semibold text-gray-800 mb-2">
@@ -78,6 +72,12 @@ const ProgressChart: React.FC<ProgressChartProps> = ({
             </p>
             {data.reviews === 0 && (
               <p className="text-gray-500 text-xs">No study activity</p>
+            )}
+            {/* Debug info in development */}
+            {process.env.NODE_ENV === 'development' && (
+              <p className="text-xs text-gray-400">
+                Date: {data.date} | Timezone: {userTimezone}
+              </p>
             )}
           </div>
         </div>
@@ -120,6 +120,10 @@ const ProgressChart: React.FC<ProgressChartProps> = ({
           </h4>
           <div className="text-sm text-gray-500">
             Learning activity overview
+            {/* Debug timezone info in development */}
+            {process.env.NODE_ENV === 'development' && (
+              <span className="ml-2 text-xs">({userTimezone})</span>
+            )}
           </div>
         </div>
         
@@ -286,11 +290,33 @@ const ProgressChart: React.FC<ProgressChartProps> = ({
           </div>
         </div>
       )}
+
+      {/* Development Debug Panel - ENHANCED */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="mt-4 pt-4 border-t border-gray-300">
+          <details className="text-xs text-gray-500">
+            <summary className="cursor-pointer">Debug: Date Processing Info</summary>
+            <div className="mt-2 p-2 bg-gray-100 rounded">
+              <p><strong>User Timezone:</strong> {userTimezone}</p>
+              <p><strong>Chart Type:</strong> {type}</p>
+              <p><strong>Data Points:</strong> {chartData.length}</p>
+              <p><strong>Today's Data:</strong> {JSON.stringify(chartData.find(d => d.isToday))}</p>
+              {type === 'weekly' && (
+                <>
+                  <p><strong>Backend Weekly Data:</strong> {JSON.stringify(weeklyData)}</p>
+                  <p><strong>Mapped Chart Data:</strong> {JSON.stringify(chartData.map(d => ({ day: d.day, reviews: d.reviews, date: d.date, isToday: d.isToday })))}</p>
+                  <p><strong>Total Reviews Found:</strong> {totalReviews}</p>
+                </>
+              )}
+            </div>
+          </details>
+        </div>
+      )}
     </div>
   )
 }
 
-// Helper function to calculate current study streak
+// FIXED: Helper function to calculate current study streak with timezone awareness
 function calculateStreak(chartData: any[]): number {
   let streak = 0
   for (let i = chartData.length - 1; i >= 0; i--) {
