@@ -1,512 +1,350 @@
 'use client'
 
-import React from 'react'
-import { Flame, Calendar, Trophy, Target, TrendingUp, Award } from 'lucide-react'
-import { 
-  formatNextReviewDate, 
-  getUserTimezone,
-  mapReviewDataToChart
-} from '@/utils/dateHelpers'
+import React, { useState, useEffect } from 'react'
+import { getUserTimezone, getWeeklyChartDates, isToday, formatNextReviewDate } from '@/utils/dateHelpers'
+
+// Interface for the raw stats passed from the dashboard
+interface RawStats {
+  study_streak?: number
+  longest_streak?: number
+  total_reviews?: number
+  weekly_progress?: number[]
+  next_review_date?: string
+}
 
 interface StudyStreakCardProps {
-  // REFACTORED: Accept raw stats data instead of processed values
-  rawStats?: {
-    study_streak?: number
-    longest_streak?: number
-    total_reviews?: number
-    weekly_progress?: number[]
-    next_review_date?: string
-  }
-  // Backward compatibility props (optional)
-  currentStreak?: number
-  longestStreak?: number
-  totalStudyDays?: number
+  rawStats: RawStats
   weeklyGoal?: number
-  weeklyProgress?: number | number[]
-  nextReviewDate?: string
 }
 
-const StudyStreakCard: React.FC<StudyStreakCardProps> = ({
-  rawStats,
-  // Backward compatibility props
-  currentStreak: legacyCurrentStreak,
-  longestStreak: legacyLongestStreak,
-  totalStudyDays: legacyTotalStudyDays,
-  weeklyGoal = 7,
-  weeklyProgress: legacyWeeklyProgress,
-  nextReviewDate: legacyNextReviewDate
-}) => {
-  const userTimezone = getUserTimezone()
-  
-  // REFACTORED: Calculate longest streak from weekly progress data (moved from dashboard)
-  const calculateLongestStreakFromProgress = (weeklyProgress: number[]): number => {
-    if (!Array.isArray(weeklyProgress) || weeklyProgress.length === 0) {
-      return 0
-    }
-    
-    let longestStreak = 0
-    let currentStreakCalc = 0
-    
-    // Convert weekly progress to binary activity (1 if reviews > 0, 0 if not)
-    const activityPattern = weeklyProgress.map(reviews => Number(reviews) > 0 ? 1 : 0)
-    
-    // Find longest consecutive sequence of 1s
-    for (const hasActivity of activityPattern) {
-      if (hasActivity) {
-        currentStreakCalc++
-        longestStreak = Math.max(longestStreak, currentStreakCalc)
-      } else {
-        currentStreakCalc = 0
-      }
-    }
-    
-    return longestStreak
-  }
-
-  // REFACTORED: Process raw stats data internally (moved from dashboard)
-  const processStreakData = () => {
-    // Use rawStats if provided, otherwise fall back to legacy props
-    if (rawStats) {
-      const weeklyProgress = rawStats.weekly_progress || [0, 0, 0, 0, 0, 0, 0]
-      
-      // Calculate longest streak from available data (moved logic from dashboard)
-      const calculatedLongestStreak = Math.max(
-        Number(rawStats.longest_streak) || 0, // Use if available
-        Number(rawStats.study_streak) || 0,   // Fallback to current streak
-        calculateLongestStreakFromProgress(weeklyProgress) // Calculate from weekly data
-      )
-      
-      return {
-        currentStreak: Number(rawStats.study_streak) || 0,
-        longestStreak: calculatedLongestStreak,
-        totalStudyDays: Math.min(Number(rawStats.total_reviews) || 0, 100),
-        weeklyProgress,
-        nextReviewDate: rawStats.next_review_date
-      }
-    }
-    
-    // Backward compatibility: use legacy props
-    return {
-      currentStreak: legacyCurrentStreak || 0,
-      longestStreak: legacyLongestStreak || 0,
-      totalStudyDays: legacyTotalStudyDays || 0,
-      weeklyProgress: legacyWeeklyProgress || [0, 0, 0, 0, 0, 0, 0],
-      nextReviewDate: legacyNextReviewDate
-    }
-  }
-
-  // Get processed streak data
-  const streakData = processStreakData()
-  const { currentStreak, longestStreak, totalStudyDays, weeklyProgress, nextReviewDate } = streakData
-  
-  const streakLevel = getStreakLevel(currentStreak)
-  
-  // FIXED: Use timezone-aware date mapping for weekly progress (same as ProgressChart)
-  const weeklyChartData = Array.isArray(weeklyProgress) 
-    ? mapReviewDataToChart(weeklyProgress, 'weekly', userTimezone)
-    : []
-  
-  // FIXED: Calculate weekly progress days from properly mapped data
-  const calculateWeeklyProgressDays = (chartData: any[]): number => {
-    return chartData.filter(dayData => Number(dayData.reviews) > 0).length
-  }
-  
-  const actualWeeklyProgress = calculateWeeklyProgressDays(weeklyChartData)
-  const progressPercentage = Math.min((actualWeeklyProgress / weeklyGoal) * 100, 100)
-  const isGoalReached = actualWeeklyProgress >= weeklyGoal
-  
-  // ADDED: Enhanced streak analysis
-  const streakAnalysis = getStreakAnalysis(currentStreak, longestStreak, totalStudyDays)
-  const streakMotivation = getStreakMotivation(currentStreak, longestStreak)
-  
-  // FIXED: Use timezone-aware next review date formatting
-  const formattedNextReviewDate = nextReviewDate
-    ? formatNextReviewDate(nextReviewDate, userTimezone)
-    : null
-
-  return (
-    <div className="space-y-6">
-      {/* Header with Level Badge */}
-      <div className="flex items-center justify-between">
-        <StreakBadge level={streakLevel} />
-        {longestStreak > currentStreak && (
-          <div className="flex items-center gap-1 text-xs text-gray-500">
-            <Award size={12} />
-            <span>Best: {longestStreak}</span>
-          </div>
-        )}
-      </div>
-
-      {/* Main Streak Display */}
-      <div className="text-center py-4">
-        <div className="relative">
-          {/* Flame Animation */}
-          <div className={`text-6xl mb-2 ${getFlameAnimation(currentStreak)}`}>
-            {currentStreak > 0 ? '🔥' : '💨'}
-          </div>
-          
-          {/* Streak Number */}
-          <div className="text-4xl font-bold text-achievement-500 mb-1">
-            {currentStreak}
-          </div>
-          <div className="text-sm font-semibold text-neutral-charcoal">
-            {currentStreak === 1 ? 'Day Streak' : 'Days Streak'}
-          </div>
-          
-          {/* ENHANCED: Dynamic Streak Status */}
-          <div className="mt-2">
-            {streakMotivation.message && (
-              <span className={`text-sm font-medium ${streakMotivation.color}`}>
-                {streakMotivation.icon} {streakMotivation.message}
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* ENHANCED: Statistics Grid with Better Streak Info */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="text-center p-3 bg-focus-50 border border-focus-200 rounded-lg">
-          <div className="text-xl font-bold text-focus-600">{longestStreak}</div>
-          <div className="text-xs text-focus-700">Best Streak</div>
-          {longestStreak > 0 && currentStreak < longestStreak && (
-            <div className="text-xs text-gray-500 mt-1">
-              -{longestStreak - currentStreak} to beat
-            </div>
-          )}
-        </div>
-        <div className="text-center p-3 bg-learning-50 border border-learning-200 rounded-lg">
-          <div className="text-xl font-bold text-learning-600">{totalStudyDays}</div>
-          <div className="text-xs text-learning-700">Total Days</div>
-          {streakAnalysis.consistency && (
-            <div className="text-xs text-green-600 mt-1">
-              {streakAnalysis.consistency}% consistent
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* FIXED: Timezone-aware Streak Progress Visualization */}
-      {weeklyChartData.length > 0 && (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-neutral-charcoal">This Week</span>
-            <span className="text-sm text-neutral-gray">
-              {actualWeeklyProgress}/{weeklyGoal} days
-            </span>
-          </div>
-          
-          {/* FIXED: Visual Week Progress using timezone-aware mapping */}
-          <div className="flex space-x-1">
-            {weeklyChartData.map((dayData, index) => {
-              const hasActivity = Number(dayData.reviews) > 0
-              const isToday = dayData.isToday
-              return (
-                <div key={index} className="flex-1 text-center">
-                  <div
-                    className={`h-8 border-2 transition-all duration-300 relative ${
-                      hasActivity 
-                        ? 'bg-orange-500 border-orange-600' 
-                        : 'bg-gray-100 border-gray-200'
-                    } ${isToday ? 'border-orange-500' : ''}`}
-                    title={`${dayData.day}: ${dayData.reviews} reviews${isToday ? ' (Today)' : ''}`}
-                  >
-                    {hasActivity && (
-                      <div className="text-white text-xs pt-1 font-bold">
-                        {dayData.reviews}
-                      </div>
-                    )}
-                    {isToday && !hasActivity && (
-                      <div className="h-full bg-orange-50"></div>
-                    )}
-                  </div>
-                  <div className={`text-xs mt-1 ${isToday ? 'text-orange-600 font-bold' : 'text-gray-500'}`}>
-                    {dayData.day}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Weekly Goal Progress - ENHANCED: Better visualization */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-neutral-charcoal">Weekly Goal</span>
-          <span className="text-sm text-neutral-gray">
-            {actualWeeklyProgress}/{weeklyGoal} days
-          </span>
-        </div>
-        
-        <div className="relative">
-          <div className="w-full bg-neutral-gray bg-opacity-20 rounded-full h-3">
-            <div 
-              className={`h-3 rounded-full transition-all duration-500 ${
-                isGoalReached ? 'bg-green-500' : 'bg-achievement-500'
-              }`}
-              style={{ width: `${progressPercentage}%` }}
-            ></div>
-          </div>
-          
-          {/* Goal Achievement Badge */}
-          {isGoalReached && (
-            <div className="absolute -top-1 -right-1">
-              <div className="bg-green-500 text-white p-1 rounded-full text-xs font-bold">
-                <Trophy size={12} />
-              </div>
-            </div>
-          )}
-        </div>
-        
-        <div className="text-center">
-          {isGoalReached ? (
-            <span className="text-green-600 text-sm font-medium">
-              🎉 Weekly goal achieved!
-            </span>
-          ) : (
-            <span className="text-neutral-gray text-sm">
-              {weeklyGoal - actualWeeklyProgress} more days to reach your goal
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* ENHANCED: Streak Insights */}
-      {streakAnalysis.insights.length > 0 && (
-        <div className="space-y-2">
-          <h4 className="text-sm font-semibold text-neutral-charcoal">Streak Insights</h4>
-          <div className="space-y-1">
-            {streakAnalysis.insights.map((insight, index) => (
-              <div key={index} className="flex items-start gap-2 text-xs">
-                <span className="text-blue-500">{insight.icon}</span>
-                <span className="text-gray-600">{insight.text}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Next Review Info - FIXED: Timezone-aware date display */}
-      {formattedNextReviewDate && (
-        <div className="p-3 bg-learning-50 border-l-4 border-learning-500 rounded">
-          <div className="flex items-center gap-2 text-sm">
-            <Calendar size={16} className="text-learning-600" />
-            <span className="text-learning-700">
-              Next review: {formattedNextReviewDate}
-            </span>
-          </div>
-        </div>
-      )}
-
-      {/* Motivational Messages */}
-      <div className="text-center">
-        <MotivationalMessage 
-          currentStreak={currentStreak} 
-          longestStreak={longestStreak}
-          weeklyProgress={actualWeeklyProgress} 
-        />
-      </div>
-
-      {/* Achievement Preview */}
-      <div className="space-y-2">
-        <h4 className="text-sm font-semibold text-neutral-charcoal">Upcoming Achievements</h4>
-        <div className="space-y-1">
-          {getUpcomingAchievements(currentStreak).map((achievement, index) => (
-            <div key={index} className="flex items-center justify-between text-xs">
-              <span className="text-neutral-gray">{achievement.name}</span>
-              <span className="text-achievement-600 font-medium">
-                {achievement.daysLeft} days
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  )
+interface Achievement {
+  id: string
+  name: string
+  icon: string
+  description: string
+  unlocked: boolean
+  currentProgress?: number
+  targetProgress?: number
 }
 
-// Streak Badge Component
-interface StreakBadgeProps {
-  level: 'beginner' | 'consistent' | 'dedicated' | 'master'
+interface Milestone {
+  days: number
+  name: string
+  icon: string
+  description: string
+  achieved: boolean
 }
 
-const StreakBadge: React.FC<StreakBadgeProps> = ({ level }) => {
-  const config = {
-    beginner: { bg: 'bg-gray-100', text: 'text-gray-700', label: 'Beginner', icon: '🌱' },
-    consistent: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Consistent', icon: '⚡' },
-    dedicated: { bg: 'bg-achievement-100', text: 'text-achievement-700', label: 'Dedicated', icon: '🔥' },
-    master: { bg: 'bg-green-100', text: 'text-green-700', label: 'Master', icon: '👑' }
-  }
-
-  const { bg, text, label, icon } = config[level]
-
-  return (
-    <div className={`${bg} ${text} px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1`}>
-      <span>{icon}</span>
-      <span>{label}</span>
-    </div>
-  )
+// Achievement levels based on streak
+const getAchievementLevel = (streak: number): { name: string; icon: string; color: string; bgColor: string } => {
+  if (streak >= 30) return { name: 'Master', icon: '👑', color: '#22c55e', bgColor: 'bg-green-100' }
+  if (streak >= 7) return { name: 'Dedicated', icon: '🔥', color: '#ff6b35', bgColor: 'bg-orange-100' }
+  if (streak >= 3) return { name: 'Consistent', icon: '⚡', color: '#3b82f6', bgColor: 'bg-blue-100' }
+  return { name: 'Beginner', icon: '🌱', color: '#22c55e', bgColor: 'bg-green-50' }
 }
 
-// ENHANCED: Motivational Message Component
-const MotivationalMessage: React.FC<{ 
-  currentStreak: number; 
-  longestStreak: number;
-  weeklyProgress: number 
-}> = ({ currentStreak, longestStreak, weeklyProgress }) => {
+// Named milestones
+const MILESTONES: Milestone[] = [
+  { days: 3, name: 'First Spark', icon: '🌟', description: 'You\'ve started your journey!', achieved: false },
+  { days: 7, name: 'Week Warrior', icon: '🔥', description: 'A full week of dedication!', achieved: false },
+  { days: 14, name: 'Two Week Thunder', icon: '⚡', description: 'Two weeks of consistent learning!', achieved: false },
+  { days: 30, name: 'Monthly Master', icon: '🏆', description: 'A month of excellence!', achieved: false },
+  { days: 60, name: 'Diamond Dedication', icon: '💎', description: 'Two months of mastery!', achieved: false },
+  { days: 100, name: 'Century Scholar', icon: '👑', description: 'A hundred days of wisdom!', achieved: false }
+]
+
+// Motivational messages based on streak
+const getMotivationalMessage = (currentStreak: number, longestStreak: number): string => {
   if (currentStreak === 0) {
-    return (
-      <div className="text-sm text-neutral-gray">
-        💡 <strong>Tip:</strong> Start with just 5 minutes of study to build your habit
-      </div>
-    )
-  }
-
-  if (currentStreak === longestStreak && currentStreak > 1) {
-    return (
-      <div className="text-sm text-purple-600">
-        🏆 Personal record! You're at your best streak ever
-      </div>
-    )
-  }
-
-  if (currentStreak < 3) {
-    return (
-      <div className="text-sm text-learning-600">
-        🌱 Great start! Consistency is key to building lasting learning habits
-      </div>
-    )
-  }
-
-  if (currentStreak < 7) {
-    return (
-      <div className="text-sm text-achievement-600">
-        ⚡ You're building momentum! Keep up the excellent work
-      </div>
-    )
-  }
-
-  if (currentStreak < 30) {
-    return (
-      <div className="text-sm text-green-600">
-        🏆 Outstanding dedication! You're developing true mastery
-      </div>
-    )
-  }
-
-  return (
-    <div className="text-sm text-purple-600">
-      👑 Legendary learner! Your commitment is truly inspiring
-    </div>
-  )
-}
-
-// ADDED: Streak Analysis Helper
-function getStreakAnalysis(currentStreak: number, longestStreak: number, totalStudyDays: number) {
-  const insights = []
-  let consistency = 0
-  
-  if (totalStudyDays > 0) {
-    consistency = Math.round((currentStreak / Math.max(totalStudyDays, 1)) * 100)
-  }
-
-  if (currentStreak === longestStreak && currentStreak > 0) {
-    insights.push({ icon: '🏆', text: 'This is your personal best!' })
+    return longestStreak > 0 
+      ? `Ready for a comeback? Your best was ${longestStreak} days!`
+      : 'Ready to start your learning journey? Every expert was once a beginner!'
   }
   
-  if (currentStreak > 0 && currentStreak < longestStreak) {
-    const daysToRecord = longestStreak - currentStreak
-    insights.push({ icon: '🎯', text: `${daysToRecord} more days to beat your record` })
-  }
-  
-  if (currentStreak >= 7) {
-    insights.push({ icon: '💪', text: 'You\'ve built a solid study habit' })
+  if (currentStreak > longestStreak) {
+    return `🎉 NEW RECORD! You've beaten your best streak of ${longestStreak} days!`
   }
   
   if (currentStreak >= 30) {
-    insights.push({ icon: '🧠', text: 'Your brain is optimized for learning' })
+    return '🏆 Elite performance! You\'re a true learning champion!'
   }
-
-  return {
-    consistency,
-    insights
+  
+  if (currentStreak >= 14) {
+    return '💪 Outstanding commitment! You\'re building incredible habits!'
   }
+  
+  if (currentStreak >= 7) {
+    return '🔥 On fire! A full week of consistent learning!'
+  }
+  
+  if (currentStreak >= 3) {
+    return '⚡ Great momentum! Keep the energy flowing!'
+  }
+  
+  return '🌱 Great start! Every journey begins with a single step!'
 }
 
-// ADDED: Streak Motivation Helper
-function getStreakMotivation(currentStreak: number, longestStreak: number) {
-  if (currentStreak === 0) {
-    return {
-      message: 'Start studying today to begin your streak!',
-      color: 'text-neutral-gray',
-      icon: '💡'
+// Calculate weekly activity from progress data
+const calculateWeeklyActivity = (weeklyProgress: number[]): { studiedDays: number; consistencyPercentage: number } => {
+  if (!weeklyProgress || weeklyProgress.length === 0) {
+    return { studiedDays: 0, consistencyPercentage: 0 }
+  }
+  
+  const studiedDays = weeklyProgress.filter(day => day > 0).length
+  const consistencyPercentage = Math.round((studiedDays / 7) * 100)
+  
+  return { studiedDays, consistencyPercentage }
+}
+
+// Get next milestone
+const getNextMilestone = (currentStreak: number): Milestone | null => {
+  return MILESTONES.find(milestone => milestone.days > currentStreak) || null
+}
+
+export default function StudyStreakCard({ rawStats, weeklyGoal = 7 }: StudyStreakCardProps) {
+  const [animateFlame, setAnimateFlame] = useState(false)
+  const [weeklyDates, setWeeklyDates] = useState<Array<{ date: Date; label: string; isToday: boolean }>>([])
+  
+  // Process raw stats with safe defaults
+  const currentStreak = rawStats?.study_streak || 0
+  const longestStreak = rawStats?.longest_streak || 0
+  const totalReviews = rawStats?.total_reviews || 0
+  const weeklyProgress = rawStats?.weekly_progress || [0, 0, 0, 0, 0, 0, 0]
+  const nextReviewDate = rawStats?.next_review_date
+  
+  const userTimezone = getUserTimezone()
+  const achievementLevel = getAchievementLevel(currentStreak)
+  const motivationalMessage = getMotivationalMessage(currentStreak, longestStreak)
+  const weeklyActivity = calculateWeeklyActivity(weeklyProgress)
+  const nextMilestone = getNextMilestone(currentStreak)
+  
+  // Update milestones based on current streak
+  const milestonesWithStatus = MILESTONES.map(milestone => ({
+    ...milestone,
+    achieved: currentStreak >= milestone.days
+  }))
+
+  useEffect(() => {
+    // Generate weekly dates for calendar
+    setWeeklyDates(getWeeklyChartDates(userTimezone))
+    
+    // Animate flame icon on mount if streak > 0
+    if (currentStreak > 0) {
+      setAnimateFlame(true)
+      const timer = setTimeout(() => setAnimateFlame(false), 1000)
+      return () => clearTimeout(timer)
     }
+  }, [currentStreak, userTimezone])
+
+  // Weekly calendar component
+  const WeeklyCalendar = () => {
+    // Reverse weekly progress to match frontend date order (oldest to newest)
+    const reversedProgress = [...weeklyProgress].reverse()
+    
+    return (
+      <div className="grid grid-cols-7 gap-1 mb-4">
+        {weeklyDates.map((dateInfo, index) => {
+          const hasActivity = reversedProgress[index] > 0
+          const activityCount = reversedProgress[index] || 0
+          const isCurrentDay = dateInfo.isToday
+          
+          return (
+            <div key={index} className="text-center">
+              <div className={`text-xs font-medium mb-1 ${isCurrentDay ? 'text-orange-600' : 'text-gray-600'}`}>
+                {dateInfo.label}
+              </div>
+              <div 
+                className={`
+                  h-8 w-8 mx-auto border-2 flex items-center justify-center text-xs font-bold transition-all duration-300
+                  ${isCurrentDay ? 'border-orange-500' : 'border-gray-300'}
+                  ${hasActivity 
+                    ? 'bg-orange-500 text-white shadow-md hover:shadow-lg' 
+                    : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+                  }
+                `}
+                title={`${dateInfo.date.toLocaleDateString()}: ${activityCount} reviews`}
+              >
+                {hasActivity ? activityCount : '•'}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    )
   }
 
-  if (currentStreak === longestStreak && currentStreak > 1) {
-    return {
-      message: 'Personal record! 🏆',
-      color: 'text-purple-600',
-      icon: '🚀'
+  // Achievement badges component
+  const AchievementBadges = () => (
+    <div className="space-y-2">
+      <h4 className="text-sm font-semibold text-gray-700">Achievements</h4>
+      <div className="grid grid-cols-2 gap-2">
+        {milestonesWithStatus.slice(0, 4).map((milestone) => (
+          <div
+            key={milestone.days}
+            className={`
+              p-2 rounded-lg border-2 text-center transition-all duration-300
+              ${milestone.achieved
+                ? 'border-orange-300 bg-orange-50 text-orange-800'
+                : 'border-gray-200 bg-gray-50 text-gray-400'
+              }
+            `}
+          >
+            <div className="text-lg">{milestone.icon}</div>
+            <div className="text-xs font-medium">{milestone.name}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+
+  // Progress statistics component
+  const ProgressStats = () => (
+    <div className="space-y-3">
+      <div className="flex justify-between items-center">
+        <span className="text-sm text-gray-600">Best Streak</span>
+        <span className="font-bold text-orange-600">{longestStreak} days</span>
+      </div>
+      <div className="flex justify-between items-center">
+        <span className="text-sm text-gray-600">This Week</span>
+        <span className="font-bold text-orange-600">{weeklyActivity.studiedDays}/7 days</span>
+      </div>
+      <div className="flex justify-between items-center">
+        <span className="text-sm text-gray-600">Consistency</span>
+        <span className="font-bold text-orange-600">{weeklyActivity.consistencyPercentage}%</span>
+      </div>
+      <div className="flex justify-between items-center">
+        <span className="text-sm text-gray-600">Total Reviews</span>
+        <span className="font-bold text-orange-600">{totalReviews.toLocaleString()}</span>
+      </div>
+    </div>
+  )
+
+  // Weekly goal progress component
+  const WeeklyGoalProgress = () => {
+    const goalProgress = Math.min((weeklyActivity.studiedDays / weeklyGoal) * 100, 100)
+    const isGoalMet = weeklyActivity.studiedDays >= weeklyGoal
+    
+    return (
+      <div className="space-y-3">
+        <div className="flex justify-between items-center">
+          <span className="text-sm font-medium text-gray-700">Weekly Goal</span>
+          <span className={`text-sm font-bold ${isGoalMet ? 'text-green-600' : 'text-orange-600'}`}>
+            {weeklyActivity.studiedDays}/{weeklyGoal} days
+          </span>
+        </div>
+        <div className="w-full bg-gray-200 h-3 border-2 border-black">
+          <div
+            className={`h-full transition-all duration-500 ${isGoalMet ? 'bg-green-500' : 'bg-orange-500'}`}
+            style={{ width: `${goalProgress}%` }}
+          />
+        </div>
+        {isGoalMet && (
+          <div className="text-xs text-green-600 font-medium flex items-center">
+            <span className="mr-1">🎉</span>
+            Goal achieved! Keep it up!
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // Next milestone preview component
+  const NextMilestonePreview = () => {
+    if (!nextMilestone) {
+      return (
+        <div className="p-3 bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 rounded-lg">
+          <div className="text-center">
+            <div className="text-2xl mb-2">🏆</div>
+            <div className="text-sm font-bold text-purple-800">Master Level!</div>
+            <div className="text-xs text-purple-600">You've achieved all milestones!</div>
+          </div>
+        </div>
+      )
     }
+
+    const daysToGo = nextMilestone.days - currentStreak
+    const progress = currentStreak / nextMilestone.days * 100
+
+    return (
+      <div className="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-lg">
+        <div className="text-center mb-2">
+          <div className="text-xl mb-1">{nextMilestone.icon}</div>
+          <div className="text-sm font-bold text-blue-800">{nextMilestone.name}</div>
+          <div className="text-xs text-blue-600">{daysToGo} days to go!</div>
+        </div>
+        <div className="w-full bg-blue-100 h-2 rounded-full">
+          <div
+            className="h-full bg-blue-500 rounded-full transition-all duration-500"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+      </div>
+    )
   }
 
-  if (currentStreak < 3) {
-    return {
-      message: 'Keep it up! 🌟',
-      color: 'text-learning-600',
-      icon: '⭐'
-    }
-  }
+  return (
+    <div className="space-y-6">
+      {/* Main Streak Display */}
+      <div className="text-center">
+        <div className="flex items-center justify-center mb-3">
+          <div 
+            className={`text-6xl transition-all duration-300 ${
+              animateFlame ? 'animate-bounce scale-110' : ''
+            }`}
+          >
+            {achievementLevel.icon}
+          </div>
+        </div>
+        
+        <div className="mb-2">
+          <div className="text-4xl font-bold text-orange-600 mb-1">
+            {currentStreak}
+          </div>
+          <div className="text-sm font-medium text-gray-600">
+            day{currentStreak !== 1 ? 's' : ''} streak
+          </div>
+        </div>
+        
+        <div className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${achievementLevel.bgColor}`}>
+          <span className="mr-1">{achievementLevel.icon}</span>
+          {achievementLevel.name}
+        </div>
+      </div>
 
-  if (currentStreak < 7) {
-    return {
-      message: 'You\'re on fire! 🚀',
-      color: 'text-achievement-600',
-      icon: '🔥'
-    }
-  }
+      {/* Motivational Message */}
+      <div className="text-center p-3 bg-gradient-to-r from-orange-50 to-yellow-50 border-2 border-orange-200 rounded-lg">
+        <div className="text-sm font-medium text-orange-800">
+          {motivationalMessage}
+        </div>
+      </div>
 
-  return {
-    message: 'Incredible dedication! 🏆',
-    color: 'text-green-600',
-    icon: '👑'
-  }
+      {/* Weekly Calendar */}
+      <div>
+        <h4 className="text-sm font-semibold text-gray-700 mb-3">This Week</h4>
+        <WeeklyCalendar />
+      </div>
+
+      {/* Weekly Goal Progress */}
+      <WeeklyGoalProgress />
+
+      {/* Progress Statistics */}
+      <ProgressStats />
+
+      {/* Achievement Badges */}
+      <AchievementBadges />
+
+      {/* Next Milestone Preview */}
+      <NextMilestonePreview />
+
+      {/* Next Review Date */}
+      {nextReviewDate && (
+        <div className="text-center p-3 bg-gray-50 border-2 border-gray-200 rounded-lg">
+          <div className="text-xs text-gray-600 mb-1">Next Review</div>
+          <div className="text-sm font-medium text-gray-800">
+            {formatNextReviewDate(nextReviewDate, userTimezone)}
+          </div>
+        </div>
+      )}
+    </div>
+  )
 }
-
-// Helper Functions
-function getStreakLevel(streak: number): 'beginner' | 'consistent' | 'dedicated' | 'master' {
-  if (streak < 3) return 'beginner'
-  if (streak < 7) return 'consistent'
-  if (streak < 30) return 'dedicated'
-  return 'master'
-}
-
-function getFlameAnimation(streak: number): string {
-  if (streak === 0) return ''
-  if (streak < 3) return 'animate-pulse'
-  if (streak < 7) return 'animate-bounce'
-  return 'animate-pulse'
-}
-
-function getUpcomingAchievements(currentStreak: number): Array<{ name: string; daysLeft: number }> {
-  const achievements = [
-    { milestone: 3, name: '🌟 First Spark' },
-    { milestone: 7, name: '🔥 Week Warrior' },
-    { milestone: 14, name: '⚡ Two Week Thunder' },
-    { milestone: 30, name: '🏆 Monthly Master' },
-    { milestone: 60, name: '💎 Diamond Dedication' },
-    { milestone: 100, name: '👑 Century Scholar' }
-  ]
-
-  return achievements
-    .filter(a => a.milestone > currentStreak)
-    .slice(0, 3)
-    .map(a => ({
-      name: a.name,
-      daysLeft: a.milestone - currentStreak
-    }))
-}
-
-export default StudyStreakCard
