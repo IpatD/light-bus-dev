@@ -21,8 +21,28 @@ interface UploadProgress {
 }
 
 const ACCEPTED_TYPES = {
-  audio: ['audio/mp3', 'audio/wav', 'audio/m4a', 'audio/aac', 'audio/ogg'],
-  video: ['video/mp4', 'video/mov', 'video/avi', 'video/mkv', 'video/webm']
+  audio: [
+    'audio/mpeg',      // Standard MIME type for MP3
+    'audio/mp3',       // Non-standard but some systems use it
+    'audio/wav',
+    'audio/wave',      // Alternative MIME type for WAV
+    'audio/x-wav',     // Alternative MIME type for WAV
+    'audio/m4a',
+    'audio/mp4',       // Some M4A files use this
+    'audio/aac',
+    'audio/ogg',
+    'audio/vorbis'     // Alternative for OGG
+  ],
+  video: [
+    'video/mp4',
+    'video/quicktime', // Standard MIME type for MOV
+    'video/mov',       // Non-standard but some systems use it
+    'video/avi',
+    'video/x-msvideo', // Standard MIME type for AVI
+    'video/mkv',
+    'video/x-matroska', // Standard MIME type for MKV
+    'video/webm'
+  ]
 }
 
 const MAX_FILE_SIZE = 100 * 1024 * 1024 // 100MB
